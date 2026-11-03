@@ -1,0 +1,170 @@
+LIVECONCERTS — ALL-FEATURES INTEGRATION PACKAGE
+================================================
+
+This package updates the existing LiveConcerts project in one bundle. Keep a backup of your old folder.
+
+WHAT IS INCLUDED
+----------------
+1. Event discovery
+   - Live / upcoming / ended / replay classification.
+   - Search and category filter.
+   - Safer text rendering for event-card content.
+   - Hidden/removed moderation statuses excluded from homepage results.
+
+2. Creator invitation access codes
+   - Public vs invitation-code event setting.
+   - Generate an invitation code when creating a code-protected event.
+   - Optional expiry and maximum-use limits.
+   - Code list and revocation controls.
+   - Viewer redemption; codes are hashed in the database and checked by an Edge Function.
+   - Paid events still require a verified ticket even if an access code was redeemed.
+
+3. Viewer account features
+   - New account.html page for tickets, saved events, notifications, follows and watch history.
+   - Follow/save/report controls on the event watch page.
+   - In-app notification panel.
+   - View-session tracking via a server-side function.
+
+4. Livestream and replay access
+   - Existing Agora live stream flow preserved.
+   - Agora token issuance checks authenticated user and creator ownership.
+   - Suspended accounts are blocked from token issuance.
+   - Replay URLs are issued as short-lived signed URLs after access checks.
+   - Migration switches the `replays` storage bucket to private and adds creator upload/update/delete policies.
+   - Replay player/creator preview request signed URLs.
+
+5. Ticketing and M-Pesa integration
+   - Adds an M-Pesa STK push Edge Function using Safaricom Daraja.
+   - Payment callback records provider result, queries Daraja, and issues a ticket only after successful verification.
+   - Duplicate ticket issuance is guarded by a unique payment_transaction_id index.
+   - Paid events require a ticket before live/replay access.
+   - Actual M-Pesa use requires valid Daraja sandbox/production credentials and callback setup.
+
+6. Analytics
+   - Creator analytics uses database view sessions, peak viewer field, paid tickets and successful transaction totals.
+   - View counts represent sessions, not guaranteed unique people.
+   - Session tracking is implemented; peak concurrent count still depends on creator-side Presence updates and should be validated against live events.
+
+7. Notifications
+   - In-app notifications and read/unread state.
+   - Trigger creates a notification when an event goes live for followed creators.
+   - Event-reminders Edge Function sends in-app reminders for events starting in about 15 minutes; schedule it using Supabase Cron or a trusted scheduler.
+
+8. Admin
+   - Admin page verifies `user_roles.role='admin'` from Supabase; no email-only authorization.
+   - Live database panel reads events, profiles, transactions, reports, audit logs and categories.
+   - Admin actions use the `admin-action` Edge Function.
+   - Supported server-side actions include event moderation, profile account status, creator status, category creation/renaming and report review.
+   - Payout rows are explicitly read-only; this package does NOT falsely claim to send creator payouts.
+
+DATABASE MIGRATIONS
+-------------------
+Apply these migrations in order, after backing up your existing Supabase project:
+  supabase/migrations/202611010001_liveconcerts_security_foundation.sql
+  supabase/migrations/202611010002_liveconcerts_all_features.sql
+  supabase/migrations/202611010003_liveconcerts_integrations.sql
+
+IMPORTANT:
+- The migrations are additive but they still change permissions and set the `replays` bucket private.
+- Review your actual existing `events`, `profiles`, `tickets`, and Storage schemas before applying to a production database.
+- The code expects `events.id` and `creator_id` to be UUIDs and `profiles.id` to match `auth.users.id`.
+- The existing `tickets` table must have at least event_id and user_id columns; the migration adds payment status/link fields.
+- Take a backup first. If the database schema differs, adjust the migration to match rather than running blindly.
+- Once the `replays` bucket is private, playback is through short-lived signed URLs; deploy `replay-url` and verify upload/delete policies before testing existing replays.
+
+EDGE FUNCTIONS TO DEPLOY
+------------------------
+Run from the project root after installing/setting up Supabase CLI and linking the correct project:
+
+  supabase functions deploy agora-token
+  supabase functions deploy access-code
+  supabase functions deploy mpesa-stk-push
+  supabase functions deploy mpesa-callback
+  supabase functions deploy mpesa-reconcile
+  supabase functions deploy replay-url
+  supabase functions deploy view-session
+  supabase functions deploy admin-action
+  supabase functions deploy event-reminders
+
+The project reference in config.js is already set to the supplied Supabase project. Confirm the linked CLI project matches before deploying.
+
+REQUIRED EDGE FUNCTION SECRETS
+------------------------------
+Keep these in Supabase Edge Function secrets, NEVER in frontend files:
+
+  SUPABASE_URL
+  SUPABASE_ANON_KEY
+  SUPABASE_SERVICE_ROLE_KEY
+  AGORA_APP_ID
+  AGORA_APP_CERTIFICATE
+  MPESA_ENV
+  MPESA_CONSUMER_KEY
+  MPESA_CONSUMER_SECRET
+  MPESA_SHORTCODE
+  MPESA_PASSKEY
+  MPESA_TRANSACTION_TYPE (optional; default CustomerPayBillOnline)
+  MPESA_PARTY_B (optional; defaults to MPESA_SHORTCODE)
+  MPESA_CALLBACK_URL
+  CRON_SECRET
+
+MPESA_ENV must be `sandbox` while testing. Use Daraja sandbox credentials and a publicly reachable HTTPS callback URL. For example, the callback URL after deployment is:
+  https://otzwaylngzkcasvwdlid.supabase.co/functions/v1/mpesa-callback
+
+This default is for a PayBill setup. If using a Till/Buy Goods setup, set `MPESA_TRANSACTION_TYPE=CustomerBuyGoodsOnline` and configure `MPESA_PARTY_B` according to your Daraja product. Use the exact callback URL configured in Daraja. Do not use production credentials until Safaricom has approved and provisioned your production application/shortcode.
+
+ADMIN PROVISIONING
+------------------
+1. Register the account that should be the platform owner.
+2. In Supabase SQL Editor, find and verify that user's UUID in auth.users.
+3. Run the following SQL, replacing the placeholder with the verified UUID:
+
+  insert into public.user_roles(user_id, role)
+  values ('REPLACE-WITH-VERIFIED-AUTH-USER-UUID', 'admin')
+  on conflict (user_id) do update set role='admin';
+
+Do not assign the admin role based on a guessed email or a client-side flag.
+
+EVENT REMINDERS
+---------------
+The `event-reminders` and `mpesa-reconcile` functions require a secret header:
+  x-cron-secret: <the same value as CRON_SECRET>
+
+Schedule a trusted request every 1–5 minutes to the reminder endpoint:
+  https://otzwaylngzkcasvwdlid.supabase.co/functions/v1/event-reminders
+
+Also schedule `mpesa-reconcile` every few minutes using the same `x-cron-secret` header to reconcile delayed provider callbacks:
+  https://otzwaylngzkcasvwdlid.supabase.co/functions/v1/mpesa-reconcile
+
+The function is idempotent per event/user/reminder type. Do not expose CRON_SECRET in browser code.
+
+LOCAL TESTING
+-------------
+1. Open the project through localhost or HTTPS, not by double-clicking HTML files.
+2. Sign in as a creator and create a free public event.
+3. Start and end a stream; verify events.is_live returns false and replay upload finishes.
+4. Create a second free event with Invitation Code access. Copy the code once.
+5. In a second browser/account, try a wrong code, then the valid code; wrong/expired/revoked/over-limit codes should be rejected.
+6. Test a paid event only in M-Pesa sandbox. Confirm the payment transaction is marked succeeded and a ticket appears only after callback verification.
+7. Open account.html and test tickets, saved events, follows, notifications and watch history.
+8. Open admin.html using the provisioned admin account. Try an event moderation action and verify the database value changed.
+9. Test a normal account against admin.html; it must be denied.
+10. Test replay access with an account that has no ticket and one with a verified ticket.
+11. Test on a phone and with more than one viewer; verify portrait/landscape, reconnects and end-of-stream behavior.
+
+KNOWN LIMITATIONS / HONEST STATUS
+---------------------------------
+- I can inspect and edit the files, but I cannot deploy to your Supabase project or verify its live database/payment credentials from this ZIP alone.
+- M-Pesa cannot accept real money until you supply/configure valid Daraja credentials, callback URL and production approval. Never simulate successful payment.
+- The package records payment transactions and tickets, but it does not send creator payouts. Payouts need a separate verified disbursement workflow and reconciliation.
+- Event reminders require a trusted scheduler to call the Edge Function.
+- In-app notifications are implemented; email/SMS delivery is not configured.
+- Viewer sessions are tracked, but average watch time and exact unique-viewer counts require further measurement/anti-abuse rules. Peak concurrent viewers should be tested against Agora/Supabase Presence.
+- Admin account suspension changes profile status and blocks key Edge Functions; it does not delete the account or disable Supabase Auth sign-in itself.
+- Existing `replay_url` values are expected to be Supabase Storage URLs under the `replays` bucket. External URLs must be re-uploaded or migrated.
+- Real production readiness requires applying migrations, deploying functions, setting secrets, testing RLS policies and testing with real devices. The ZIP is an implementation bundle, not proof that the live project has already been deployed.
+
+SECURITY REMINDERS
+------------------
+- Never commit service-role keys, Agora certificates, M-Pesa consumer secrets, passkeys or CRON_SECRET.
+- The Supabase anon key may be in frontend code only when RLS is correct.
+- Back up the project and database before replacing files or applying migrations.

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveConcerts | Stream & Watch</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="index.html" style="text-decoration: none; color: var(--text-main);">Live<span>Concerts</span></a>
+            <button onclick="toggleSidebar()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;" title="Toggle Sidebar"><i class="fa-solid fa-bars-staggered"></i></button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="sidebar-search">
+                <input type="text" id="global-search" placeholder="🔍 Search events or creators...">
+<select id="category-filter" aria-label="Filter events by category" style="margin-left:8px;padding:10px;border-radius:8px;max-width:220px"><option value="all">All categories</option></select>
+            </div>
+
+            <a href="#" id="nav-home" class="active"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="#" id="nav-trending"><i class="fa-solid fa-fire"></i> Trending</a>
+            <a href="#" id="nav-tickets"><i class="fa-solid fa-ticket"></i> My Tickets</a>
+            <a href="#" id="nav-saved"><i class="fa-regular fa-bookmark"></i> Saved Events</a>
+            <a href="#" id="nav-reminders"><i class="fa-regular fa-bell"></i> Reminders</a>
+            <a href="#" id="nav-notifications"><i class="fa-solid fa-bell"></i> Notifications <span class="sidebar-badge" id="notif-badge" style="display:none;">0</span></a>
+            <a href="#" id="nav-purchases"><i class="fa-solid fa-receipt"></i> My Purchases</a>
+            
+            <div class="sidebar-divider"></div>
+            
+            <a href="creator.html" id="nav-creator-studio" style="display: none;"><i class="fa-solid fa-video"></i> Creator Studio</a>
+            <a href="admin.html" id="nav-admin" style="display: none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
+            <a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & FAQ</a>
+            
+            <div class="sidebar-divider"></div>
+            
+            <a href="#" id="nav-profile"><i class="fa-solid fa-user"></i> Profile Settings</a>
+            
+            <a href="login.html" id="nav-auth" class="sidebar-btn" style="background: #27272a; box-shadow: none; margin-top: 10px;"><i class="fa-solid fa-right-to-bracket"></i> Login / Register</a>
+            <a href="#" id="nav-logout" class="sidebar-btn" style="background: rgba(255,51,102,0.1); color: var(--accent); box-shadow: none; display: none; margin-top: 10px;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="btn-secondary" onclick="toggleSidebar()" style="padding: 8px 14px; font-size: 0.9rem;"><i class="fa-solid fa-bars"></i> Toggle Menu</button>
+                <button class="btn-secondary" onclick="toggleTheme()" style="padding: 8px 14px; font-size: 0.9rem;" title="Switch Dark/Light Theme"><i class="fa-solid fa-circle-half-stroke"></i> Theme</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <select id="global-currency-select" style="padding: 6px 12px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 0.85rem;">
+                    <option value="KES">KES (Ksh)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="NGN">NGN (₦)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="view-home" class="page-view active-view">
+            <header class="hero">
+                <div class="hero-content">
+                    <span class="badge">🔴 Live Events Happening Now</span>
+                    <h1>Experience Live Music, <br><span class="gradient-text">Anywhere.</span></h1>
+                    <p>Watch exclusive concerts or broadcast your own performance to the world in ultra-low latency.</p>
+                </div>
+            </header>
+            <main class="container" id="events">
+                <div class="section-header"><h2>🔴 Live Right Now</h2></div>
+                <div id="live-grid" class="grid"><p style="color: var(--text-muted);">Loading active streams...</p></div>
+                <div class="section-header" style="margin-top: 4rem;"><h2>📅 Upcoming & Replay Events</h2></div>
+                <div id="upcoming-grid" class="grid"><p style="color: var(--text-muted);">Loading events...</p></div>
+            </main>
+        </div>
+
+        <div id="view-trending" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;"><div class="section-header"><h2>🔥 Trending Events</h2></div><div id="trending-grid" class="grid"></div></main>
+        </div>
+
+        <div id="view-tickets" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;">
+                <div class="section-header"><h2>🎟️ My Purchased Tickets & Replays</h2></div>
+                <div id="my-tickets-container" class="grid" style="grid-template-columns: 1fr;"><p style="color: var(--text-muted);">Loading tickets...</p></div>
+            </main>
+        </div>
+
+        <div id="view-saved" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;">
+                <div class="section-header"><h2>🔖 Your Saved Events</h2></div>
+                <div style="text-align: center; padding: 5rem 2rem; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border);">
+                    <i class="fa-regular fa-bookmark" style="font-size: 4rem; color: var(--border); margin-bottom: 1rem;"></i>
+                    <h2>No saved events yet</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Browse the home page to save events for later.</p>
+                    <button class="btn-primary" onclick="switchView('home', document.getElementById('nav-home'))">Explore Events</button>
+                </div>
+            </main>
+        </div>
+
+        <div id="view-reminders" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;">
+                <div class="section-header"><h2>⏰ Scheduled Event Reminders</h2></div>
+                <div id="reminders-list-container" class="grid"><p style="color: var(--text-muted);">No active reminders.</p></div>
+            </main>
+        </div>
+
+        <div id="view-notifications" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;">
+                <div class="section-header"><h2>🔔 Viewer Notifications</h2></div>
+                <div style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 2rem;">
+                    <p style="color: var(--text-muted);">No new notifications.</p>
+                </div>
+            </main>
+        </div>
+
+        <div id="view-purchases" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;">
+                <div class="section-header"><h2>💰 Order History</h2></div>
+                <div style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 1.5rem;" id="purchases-container">
+                    <p style="color: var(--text-muted);">No purchase history found.</p>
+                </div>
+            </main>
+        </div>
+
+        <div id="view-profile" class="page-view" style="display: none;">
+            <main class="container" style="padding-top: 3rem;">
+                <div class="section-header"><h2>👤 Profile Settings</h2></div>
+                <div style="background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 2rem;">
+                    <div style="display: flex; gap: 2rem; align-items: center; margin-bottom: 2rem;">
+                        <div id="profile-avatar-initial" style="width: 80px; height: 80px; background: var(--gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: white;">U</div>
+                        <div>
+                            <h3 id="profile-display-name" style="font-size: 1.5rem;">User</h3>
+                            <p id="profile-role-label" style="color: var(--text-muted);">Viewer Account</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;"><label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Display Name</label><input type="text" id="profile-name-input" style="width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px;"></div>
+                    <div style="margin-bottom: 1rem;"><label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Email</label><input type="email" id="profile-email-input" style="width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px;" disabled></div>
+                    <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="global-footer">
+        <div>© 2026 LiveConcerts. All rights reserved.</div>
+        <div class="footer-links">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="help.html">Help & FAQ</a>
+            <a href="#">Contact</a>
+        </div>
+    </footer>
+
+    <script src="utils.js"></script>
+    <script src="app.js"></script>
+    <script src="platform-features.js"></script>
+</body>
+</html>

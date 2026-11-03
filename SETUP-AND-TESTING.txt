@@ -1,0 +1,5 @@
+LiveConcerts updated all-features package.
+
+Read ALL-FEATURES-IMPLEMENTATION-GUIDE.txt first. It contains the migration order, Edge Function deployment commands, required secrets, admin provisioning, M-Pesa configuration and test checklist.
+
+Keep your original project as a backup. This package has not been deployed to your live Supabase project from this environment. Apply migrations and deploy functions before testing features that depend on them.

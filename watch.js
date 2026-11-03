@@ -1,0 +1,1 @@
+// Legacy placeholder: watch.html contains the active viewer implementation. Do not include this file as a script; its old demo player/payment flow was simulated and must not be used for real ticketing.

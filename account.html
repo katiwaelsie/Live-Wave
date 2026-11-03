@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My LiveConcerts Account</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script>
+<style>
+body{background:#080d18;color:#e5e7eb;font-family:Outfit,system-ui,sans-serif;margin:0}.account-wrap{max-width:1100px;margin:32px auto;padding:20px}.account-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:24px}.account-card{background:#111827;border:1px solid #334155;border-radius:16px;padding:18px;min-width:0}.account-card h2{margin-top:0;font-size:1.15rem}.record{padding:12px 0;border-bottom:1px solid #293548}.record:last-child{border-bottom:0}.muted{color:#94a3b8;font-size:.9rem}.pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#1e293b;font-size:.8rem}.btn{display:inline-block;border:0;border-radius:9px;padding:9px 13px;background:#6366f1;color:white;text-decoration:none;cursor:pointer}.error{color:#fca5a5}
+</style></head><body><main class="account-wrap">
+<div class="account-head"><div><h1>My Account</h1><p class="muted" id="account-status">Loading your account…</p></div><div><a class="btn" href="index.html">Discover events</a> <button class="btn" id="signout">Sign out</button></div></div>
+<div class="account-grid">
+<section class="account-card"><h2>🎟️ My Tickets</h2><div id="tickets" class="muted">Loading…</div></section>
+<section class="account-card"><h2>⭐ Saved Events</h2><div id="saved" class="muted">Loading…</div></section>
+<section class="account-card"><h2>🔔 Notifications</h2><div id="notifications" class="muted">Loading…</div></section>
+<section class="account-card"><h2>👥 Creators I Follow</h2><div id="following" class="muted">Loading…</div></section>
+<section class="account-card"><h2>▶️ Watch History</h2><div id="history" class="muted">Loading…</div></section>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);
+const text=(el,value)=>{el.textContent=value??"";return el;};
+function record(container,title,sub,href){const r=document.createElement("div");r.className="record";const t=document.createElement(href?"a":"strong");t.textContent=title||"Untitled";if(href){t.href=href;t.style.color="#c7d2fe";}const s=document.createElement("div");s.className="muted";s.textContent=sub||"";r.append(t,s);container.appendChild(r);}
+async function run(){
+ const {data:{user},error}=await supabaseClient.auth.getUser();
+ if(error||!user){location.replace("login.html?next="+encodeURIComponent("account.html"));return;}
+ text($("account-status"),"Signed in as "+user.email);
+ const queries=await Promise.all([
+  supabaseClient.from("tickets").select("id,event_id,paid,status,issued_at").eq("user_id",user.id).order("issued_at",{ascending:false}).limit(50),
+  supabaseClient.from("saved_events").select("event_id,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(50),
+  supabaseClient.from("user_notifications").select("id,title,body,action_url,read_at,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30),
+  supabaseClient.from("creator_follows").select("creator_id,created_at").eq("follower_id",user.id).order("created_at",{ascending:false}).limit(50),
+  supabaseClient.from("event_view_sessions").select("event_id,started_at,duration_seconds,is_replay").eq("user_id",user.id).order("started_at",{ascending:false}).limit(50)
+ ]);
+ const [tickets,saved,notifications,follows,history]=queries;
+ const ids=[...(tickets.data||[]),...(saved.data||[]),...(history.data||[])].map(x=>x.event_id).filter(Boolean);
+ const unique=[...new Set(ids)];
+ const {data:events}=unique.length?await supabaseClient.from("events").select("id,title,scheduled_at,replay_url,is_live").in("id",unique):{data:[]};
+ const eventMap=new Map((events||[]).map(e=>[e.id,e]));
+ function showError(el,res){if(res.error)text(el,"This section needs its database migration/policies configured: "+res.error.message);}
+ const t=$("tickets");t.replaceChildren();if(tickets.error)showError(t,tickets);else if(!tickets.data?.length)text(t,"No tickets yet.");else tickets.data.forEach(x=>{const e=eventMap.get(x.event_id);record(t,e?.title||"Event",`${x.paid?"Paid":"Unpaid"} · ${x.status||"active"}`,`watch.html?id=${x.event_id}`);});
+ const s=$("saved");s.replaceChildren();if(saved.error)showError(s,saved);else if(!saved.data?.length)text(s,"No saved events yet.");else saved.data.forEach(x=>record(s,eventMap.get(x.event_id)?.title||"Saved event","Saved event",`watch.html?id=${x.event_id}`));
+ const n=$("notifications");n.replaceChildren();if(notifications.error)showError(n,notifications);else if(!notifications.data?.length)text(n,"No notifications.");else notifications.data.forEach(x=>{record(n,x.title,x.body,x.action_url);if(!x.read_at)supabaseClient.from("user_notifications").update({read_at:new Date().toISOString()}).eq("id",x.id).eq("user_id",user.id);});
+ const f=$("following");f.replaceChildren();if(follows.error)showError(f,follows);else if(!follows.data?.length)text(f,"You are not following any creators yet.");else follows.data.forEach(x=>record(f,"Creator "+x.creator_id,"Following"));
+ const h=$("history");h.replaceChildren();if(history.error)showError(h,history);else if(!history.data?.length)text(h,"No watch history yet. Viewing-session tracking must be enabled for this list to populate.");else history.data.forEach(x=>record(h,eventMap.get(x.event_id)?.title||"Event",`${x.is_replay?"Replay":"Live"} · ${x.duration_seconds||0}s`,`watch.html?id=${x.event_id}`));
+}
+$("signout").addEventListener("click",async()=>{await supabaseClient.auth.signOut();location.href="index.html";});
+run().catch(e=>text($("account-status"),"Could not load account: "+e.message));
+</script></body></html>

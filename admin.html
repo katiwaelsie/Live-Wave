@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Command Center | LiveConcerts</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 2rem; }
+        .stat-card { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
+        .stat-card h3 { font-size: 1.8rem; font-weight: 800; }
+        .admin-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 2rem; }
+        .admin-table th, .admin-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .admin-table th { background: #09090b; color: var(--text-muted); }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .badge-danger { background: rgba(255, 51, 102, 0.2); color: #ff3366; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <a href="index.html" class="sidebar-logo" style="text-decoration: none; display: block;">Live<span>Admin</span></a>
+        <nav class="sidebar-nav">
+            <a href="#" id="nav-overview" class="active"><i class="fa-solid fa-chart-pie"></i> Overview</a>
+            <a href="#" id="nav-live"><i class="fa-solid fa-tower-broadcast"></i> Live Control</a>
+            <a href="#" id="nav-creators"><i class="fa-solid fa-users-gear"></i> Manage Creators</a>
+            <a href="#" id="nav-users"><i class="fa-solid fa-user-shield"></i> User Management / Bans</a>
+            <a href="#" id="nav-payouts"><i class="fa-solid fa-money-bill-transfer"></i> Payouts</a>
+            <a href="#" id="nav-audit-log"><i class="fa-solid fa-scroll"></i> Audit Log / Activity</a>
+            
+            <div class="sidebar-divider"></div>
+            
+            <a href="#" id="nav-broadcast-notif"><i class="fa-solid fa-bullhorn"></i> Broadcast Notifications</a>
+            <a href="#" id="nav-tickets-mgmt"><i class="fa-solid fa-ticket"></i> Ticket / Transaction Mgmt</a>
+            <a href="#" id="nav-categories"><i class="fa-solid fa-tags"></i> Categories / Tags</a>
+            <a href="#" id="nav-regions"><i class="fa-solid fa-globe"></i> Regions / Currencies</a>
+            <a href="#" id="nav-roles"><i class="fa-solid fa-lock"></i> Roles & Permissions</a>
+            
+            <div class="sidebar-divider"></div>
+            
+            <a href="creator.html"><i class="fa-solid fa-video"></i> Creator Studio</a>
+            <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to Site</a>
+            <a href="#" id="nav-logout" class="sidebar-btn" style="background: rgba(255,51,102,0.1); color: var(--accent); box-shadow: none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper" style="padding: 2rem 4%;">
+        <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+            <button class="btn-secondary" onclick="toggleSidebar()" style="padding: 8px 14px; font-size: 0.9rem;"><i class="fa-solid fa-bars"></i> Toggle Menu</button>
+            <button class="btn-secondary" onclick="toggleTheme()" style="padding: 8px 14px; font-size: 0.9rem;"><i class="fa-solid fa-circle-half-stroke"></i> Theme</button>
+        </div>
+        
+        <!-- OVERVIEW -->
+        <div id="view-overview" class="page-view active-view">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Platform Overview</h1>
+            <div class="stats-grid">
+                <div class="stat-card"><p>Total Users</p><h3>—</h3></div>
+                <div class="stat-card"><p>Total Creators</p><h3>—</h3></div>
+                <div class="stat-card"><p>Events Hosted</p><h3>—</h3></div>
+                <div class="stat-card"><p>Live Right Now</p><h3 style="color: var(--accent);">—</h3></div>
+            </div>
+            <table class="admin-table">
+                <tr><th>Time</th><th>Activity</th><th>Status</th></tr>
+                <tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No platform activity records connected yet.</td></tr>
+            </table>
+        </div>
+
+        <!-- LIVE CONTROL -->
+        <div id="view-live" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Live Control Room</h1>
+            <table class="admin-table">
+                <tr><th>Creator</th><th>Event</th><th>Viewers</th><th>Action</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No live-stream records loaded from the database.</td></tr>
+            </table>
+        </div>
+
+        <!-- MANAGE CREATORS (With Bulk Selection) -->
+        <div id="view-creators" class="page-view" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1 style="font-size: 2.5rem; margin: 0;">Manage Creators</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" style="background: #10b981; padding: 8px 16px; font-size: 0.9rem;" onclick="bulkApproveCreators()">Approve Selected ✓</button>
+                    <button class="btn-secondary" style="color: var(--accent); border-color: var(--accent); padding: 8px 16px; font-size: 0.9rem;" onclick="bulkRejectCreators()">Reject Selected ✕</button>
+                </div>
+            </div>
+            <table class="admin-table">
+                <tr><th><input type="checkbox" id="select-all-creators" onclick="toggleAllCreators(this)"></th><th>Name</th><th>Status</th><th>Action</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No creator applications loaded from the database.</td></tr>
+            </table>
+        </div>
+
+        <!-- USER MANAGEMENT / BAN LIST TAB -->
+        <div id="view-users" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">User Management & Ban List</h1>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <input type="text" id="user-search-input" placeholder="Search by name or email..." style="flex: 1; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;" oninput="filterUserTable()">
+                <select id="user-role-filter" style="padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;" onchange="filterUserTable()">
+                    <option value="">All Roles</option>
+                    <option value="Viewer">Viewer</option>
+                    <option value="Creator">Creator</option>
+                    <option value="Moderator">Moderator</option>
+                </select>
+            </div>
+            <table class="admin-table" id="user-mgmt-table">
+                <tr><th>User Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr>
+                <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No user records loaded from the database.</td></tr>
+                
+            </table>
+        </div>
+
+        <!-- PAYOUTS -->
+        <div id="view-payouts" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Creator Payouts</h1>
+            <table class="admin-table">
+                <tr><th>Creator</th><th>Owed</th><th>Method</th><th>Action</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No verified payout records loaded. Payouts are not connected to a payment provider.</td></tr>
+            </table>
+        </div>
+
+        <!-- AUDIT LOG (With Search & Filter Dropdowns) -->
+        <div id="view-audit-log" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">📜 Audit Log / Activity History</h1>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <input type="text" id="audit-search" placeholder="Search audit details..." style="flex: 1; min-width: 250px; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;" oninput="filterAuditLog()">
+                <select id="audit-action-filter" style="padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;" onchange="filterAuditLog()">
+                    <option value="">All Actions</option>
+                    <option value="APPROVE">APPROVE</option>
+                    <option value="TERMINATE">TERMINATE</option>
+                    <option value="PAYOUT">PAYOUT</option>
+                    <option value="EDIT">EDIT</option>
+                </select>
+            </div>
+            <table class="admin-table" id="audit-table">
+                <tr><th>Timestamp</th><th>Admin User</th><th>Action</th><th>Details</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No audit-log records available.</td></tr>
+            </table>
+        </div>
+
+        <!-- BROADCAST NOTIFICATIONS -->
+        <div id="view-broadcast-notif" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">📣 Broadcast Notifications / Announcements</h1>
+            <div style="background: var(--card-bg); border-radius: 16px; padding: 2rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Send New Announcement</h3>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Target Audience</label>
+                    <select style="padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px; width: 100%;">
+                        <option>All Users</option>
+                        <option>Creators Only</option>
+                        <option>Viewers Only</option>
+                        <option>Specific Region: Kenya</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 8px; color: var(--text-muted);">Message</label>
+                    <textarea id="broadcast-msg" style="width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px; min-height: 100px;" placeholder="Type your announcement..."></textarea>
+                </div>
+                <button class="btn-primary" onclick="showToast('Broadcast notifications are not connected to a delivery service. No notification was sent.', true)">Send Broadcast</button>
+            </div>
+            <h3 style="margin-bottom: 1rem;">Recent Broadcasts</h3>
+            <table class="admin-table">
+                <tr><th>Date</th><th>Message</th><th>Audience</th><th>Status</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No announcement history available.</td></tr>
+            </table>
+        </div>
+
+        <!-- TICKET / TRANSACTION MANAGEMENT -->
+        <div id="view-tickets-mgmt" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">🎟️ Ticket / Transaction Management</h1>
+            <table class="admin-table">
+                <tr><th>Transaction ID</th><th>User</th><th>Event</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No real transactions loaded. Payments and refunds are not connected.</td></tr>
+            </table>
+        </div>
+
+        <!-- CATEGORIES / TAGS -->
+        <div id="view-categories" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">🏷️ Categories / Tags Management</h1>
+            <div style="background: var(--card-bg); border-radius: 16px; padding: 2rem; border: 1px solid var(--border); margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Add New Category</h3>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="text" id="new-cat-input" placeholder="Category name" style="flex: 1; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;">
+                    <button class="btn-primary" onclick="addAdminCategory()">Add Category</button>
+                </div>
+            </div>
+            <table class="admin-table" id="admin-cat-table">
+                <tr><th>Category</th><th>Events</th><th>Status</th><th>Action</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No categories stored yet. Add one above to create a local draft.</td></tr>
+            </table>
+        </div>
+
+        <!-- REGIONS / CURRENCIES -->
+        <div id="view-regions" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">🌍 Regions / Currencies</h1>
+            <table class="admin-table">
+                <tr><th>Region</th><th>Currency</th><th>Users</th><th>Status</th><th>Action</th></tr>
+                <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No region usage statistics are connected.</td></tr>
+            </table>
+        </div>
+
+        <!-- ROLES & PERMISSIONS -->
+        <div id="view-roles" class="page-view" style="display: none;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">🔐 Roles & Permissions</h1>
+            <table class="admin-table">
+                <tr><th>Role</th><th>Users</th><th>Permissions</th><th>Action</th></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Role counts and permission enforcement are not connected to a database yet.</td></tr>
+            </table>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script>
+        const views = ['overview', 'live', 'creators', 'users', 'payouts', 'audit-log', 'broadcast-notif', 'tickets-mgmt', 'categories', 'regions', 'roles'];
+
+        views.forEach(view => {
+            const navLink = document.getElementById('nav-' + view);
+            if (navLink) {
+                navLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.page-view').forEach(v => v.style.display = 'none');
+                    const target = document.getElementById('view-' + view);
+                    if (target) target.style.display = 'block';
+                    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                });
+            }
+        });
+
+        async function approveCreator(id, name) {
+            try { await window.lcAdminAction("set_creator_status", id, "approved"); showToast(`Creator "${name}" approval saved.`); location.reload(); }
+            catch (e) { showToast("Creator approval could not be saved: " + e.message, true); }
+        }
+
+        async function rejectCreator(id) {
+            try { await window.lcAdminAction("set_creator_status", id, "rejected"); showToast("Creator rejection saved."); location.reload(); }
+            catch (e) { showToast("Creator status could not be saved: " + e.message, true); }
+        }
+
+        function toggleAllCreators(master) {
+            document.querySelectorAll('.creator-checkbox').forEach(cb => cb.checked = master.checked);
+        }
+
+        async function bulkApproveCreators() {
+            const checked = [...document.querySelectorAll(".creator-checkbox:checked")];
+            if (!checked.length) { showToast("No creators selected", true); return; }
+            try {
+                for (const cb of checked) await window.lcAdminAction("set_creator_status", cb.value, "approved");
+                showToast(`Saved approval for ${checked.length} creators.`);
+                location.reload();
+            } catch (e) { showToast("Bulk approval failed: " + e.message, true); }
+        }
+
+        async function bulkRejectCreators() {
+            const checked = [...document.querySelectorAll(".creator-checkbox:checked")];
+            if (!checked.length) { showToast("No creators selected", true); return; }
+            try {
+                for (const cb of checked) await window.lcAdminAction("set_creator_status", cb.value, "rejected");
+                showToast(`Saved rejection for ${checked.length} creators.`);
+                location.reload();
+            } catch (e) { showToast("Bulk rejection failed: " + e.message, true); }
+        }
+
+        function filterUserTable() {
+            const query = document.getElementById('user-search-input').value.toLowerCase();
+            const roleFilter = document.getElementById('user-role-filter').value;
+            const rows = document.querySelectorAll('#user-mgmt-table tr');
+            for (let i = 1; i < rows.length; i++) {
+                const name = rows[i].cells[0].textContent.toLowerCase();
+                const email = rows[i].cells[1].textContent.toLowerCase();
+                const role = rows[i].cells[2].textContent;
+                const matchQuery = name.includes(query) || email.includes(query);
+                const matchRole = !roleFilter || role === roleFilter;
+                rows[i].style.display = (matchQuery && matchRole) ? '' : 'none';
+            }
+        }
+
+        async function toggleUserBan(btn) {
+            const row = btn.closest("tr");
+            const targetId = row?.dataset?.userId || row?.getAttribute("data-user-id");
+            if (!targetId) { showToast("No database user ID is attached to this row; no change was made.", true); return; }
+            const badge = row.querySelector(".badge");
+            const next = badge?.textContent?.trim().toLowerCase() === "suspended" ? "active" : "suspended";
+            try { await window.lcAdminAction("set_account_status", targetId, next); showToast("Account status saved."); location.reload(); }
+            catch (e) { showToast("Account status could not be saved: " + e.message, true); }
+        }
+
+        function filterAuditLog() {
+            const query = document.getElementById('audit-search').value.toLowerCase();
+            const actionFilter = document.getElementById('audit-action-filter').value;
+            const rows = document.querySelectorAll('#audit-table tr');
+            for (let i = 1; i < rows.length; i++) {
+                const text = rows[i].textContent.toLowerCase();
+                const action = rows[i].getAttribute('data-action');
+                const matchQuery = text.includes(query);
+                const matchAction = !actionFilter || action === actionFilter;
+                rows[i].style.display = (matchQuery && matchAction) ? '' : 'none';
+            }
+        }
+
+        function sendPayout(id) {
+            showToast("Payouts are read-only here. A verified payout provider and reconciliation workflow must be configured before money can be sent.", true);
+        }
+
+        async function killStream(id) {
+            if (!confirm("Hide this event from discovery? This does not disconnect the Agora broadcaster.")) return;
+            try { await window.lcAdminAction("set_event_moderation", id, "hidden"); showToast("Event hidden from discovery."); location.reload(); }
+            catch (e) { showToast("Could not update event moderation: " + e.message, true); }
+        }
+
+        async function addAdminCategory() {
+            const input = document.getElementById("new-cat-input");
+            const name = input?.value?.trim();
+            if (!name) return;
+            try {
+                await window.lcAdminAction("create_category", null, null, { name });
+                input.value = "";
+                showToast("Category saved to the database.");
+                location.reload();
+            } catch (e) { showToast("Category could not be saved: " + e.message, true); }
+        }
+
+        async function editRowItem(btn, type) {
+            const row = btn.closest("tr");
+            const currentName = row?.cells?.[0]?.textContent || "";
+            const newName = prompt(`Edit ${type} Name:`, currentName);
+            if (newName === null || !newName.trim()) return;
+            const categoryId = row?.dataset?.categoryId;
+            if (type === "Category" && categoryId) {
+                try { await window.lcAdminAction("rename_category", categoryId, null, { name: newName.trim() }); showToast("Category saved."); location.reload(); }
+                catch (e) { showToast("Category could not be saved: " + e.message, true); }
+                return;
+            }
+            showToast("This row is not connected to a database record; no change was made.", true);
+        }
+
+    </script>
+    <script src="platform-features.js"></script>
+    <script src="admin-secure.js"></script>
+</body>
+</html>

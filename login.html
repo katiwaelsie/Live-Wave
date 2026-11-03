@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | LiveConcerts</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ADDED: Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body style="display: flex; align-items: center; justify-content: center; height: 100vh; grid-template-columns: 1fr;">
+    <div class="studio-section" style="width: 100%; max-width: 420px; padding: 3rem; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border);">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <a href="index.html" style="text-decoration: none;"><h1 class="sidebar-logo" style="font-size: 2rem; padding: 0;">Live<span>Concerts</span></h1></a>
+            <p style="color: var(--text-muted);" id="auth-subtitle">Welcome back! Please login.</p>
+        </div>
+        <form id="auth-form">
+            <div class="form-group hidden" id="name-group" style="margin-bottom: 1rem;">
+                <label style="color: var(--text-muted); font-size: 0.9rem;">Full Name</label>
+                <input type="text" id="name" placeholder="John Doe" style="width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="color: var(--text-muted); font-size: 0.9rem;">Email Address</label>
+                <input type="email" id="email" required placeholder="you@example.com" style="width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem; position: relative;">
+                <label style="color: var(--text-muted); font-size: 0.9rem;">Password</label>
+                <input type="password" id="password" required placeholder="••••••••" style="width: 100%; padding: 12px; padding-right: 40px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;">
+                <i class="fa-solid fa-eye" id="toggle-password" style="position: absolute; right: 15px; top: 38px; cursor: pointer; color: var(--text-muted);"></i>
+            </div>
+            <div class="form-group hidden" id="account-type-group" style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-muted); font-size: 0.9rem;">I want to...</label>
+                <select id="account-type" style="width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border); color: white; border-radius: 8px;">
+                    <option value="viewer">Watch Events (Viewer)</option>
+                    <option value="creator">Host Events (Creator)</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;" id="remember-row">
+                <label style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 0.85rem;"><input type="checkbox" id="remember-me"> Remember Me</label>
+                <a href="#" id="forgot-password-link" style="color: var(--text-muted); font-size: 0.85rem;">Forgot Password?</a>
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%; margin-bottom: 1rem;" id="submit-btn">Sign In</button>
+        </form>
+        <div style="text-align: center; font-size: 0.9rem;">
+            <span style="color: var(--text-muted);" id="toggle-msg">Don't have an account?</span>
+            <a href="#" id="toggle-auth" style="color: var(--accent); font-weight: bold;">Register here</a>
+        </div>
+    </div>
+    
+    <script src="utils.js"></script>
+    <script>
+        let isLogin = true;
+        const form = document.getElementById('auth-form');
+        const toggleBtn = document.getElementById('toggle-auth');
+        
+        document.getElementById('toggle-password').addEventListener('click', () => {
+            const p = document.getElementById('password');
+            p.type = p.type === 'password' ? 'text' : 'password';
+        });
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLogin = !isLogin;
+            document.getElementById('submit-btn').textContent = isLogin ? "Sign In" : "Create Account";
+            document.getElementById('toggle-msg').textContent = isLogin ? "Don't have an account?" : "Already have an account?";
+            toggleBtn.textContent = isLogin ? "Register here" : "Sign in here";
+            document.getElementById('account-type-group').classList.toggle('hidden', isLogin);
+            document.getElementById('name-group').classList.toggle('hidden', isLogin);
+            document.getElementById('remember-row').style.display = isLogin ? 'flex' : 'none';
+        });
+
+        document.getElementById('forgot-password-link')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            if (!email) { showToast('Please enter your email first.', true); return; }
+            
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+            if (error) showToast(error.message, true);
+            else showToast(`Password reset link sent to ${email}`);
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value || 'User';
+            const selectedRole = document.getElementById('account-type').value;
+            
+            document.getElementById('submit-btn').textContent = "Authenticating...";
+            document.getElementById('submit-btn').disabled = true;
+
+            try {
+                if (isLogin) {
+                    // --- LOGIN ---
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    
+                    showToast("Logged in successfully!");
+                    
+                    // Small delay to allow the toast to show, then redirect
+                    setTimeout(async () => {
+                        if (email === 'admin@liveconcerts.com') {
+                            localStorage.setItem('userRole', 'admin');
+                            window.location.href = "admin.html";
+                        } else {
+                            const { data: profile } = await supabaseClient.from('profiles').select('is_creator').eq('id', data.user.id).single();
+                            if (profile && profile.is_creator) {
+                                localStorage.setItem('userRole', 'creator');
+                                window.location.href = "creator.html";
+                            } else {
+                                localStorage.setItem('userRole', 'viewer');
+                                window.location.href = "index.html";
+                            }
+                        }
+                    }, 500);
+
+                } else {
+                    // --- REGISTER ---
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: { data: { display_name: name, is_creator: selectedRole === 'creator' } }
+                    });
+                    if (error) throw error;
+
+                    if (data.session) {
+                        showToast("Account created successfully!");
+                        setTimeout(() => {
+                            if (selectedRole === 'creator') {
+                                localStorage.setItem('userRole', 'creator');
+                                window.location.href = "creator.html";
+                            } else {
+                                localStorage.setItem('userRole', 'viewer');
+                                window.location.href = "index.html";
+                            }
+                        }, 500);
+                    } else {
+                        showToast("Check your email to confirm your account, then login.");
+                        toggleBtn.click(); // Switch back to login
+                    }
+                }
+            } catch (error) {
+                showToast(error.message, true);
+                document.getElementById('submit-btn').textContent = isLogin ? "Sign In" : "Create Account";
+                document.getElementById('submit-btn').disabled = false;
+            }
+        });
+    </script>
+    <script src="platform-features.js"></script>
+</body>
+</html>

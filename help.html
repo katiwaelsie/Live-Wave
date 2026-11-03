@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Center | LiveConcerts</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .faq-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1rem; overflow: hidden; }
+        .faq-question { padding: 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 1.1rem; transition: background 0.2s; }
+        .faq-question:hover { background: rgba(255,255,255,0.02); }
+        .faq-answer { padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; color: var(--text-muted); line-height: 1.6; }
+        .faq-item.active .faq-answer { padding: 0 1.5rem 1.5rem 1.5rem; max-height: 300px; }
+        .faq-item.active .faq-question i { transform: rotate(180deg); color: var(--accent); }
+        .faq-question i { transition: transform 0.3s; }
+
+        /* Modal Styles */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 10000; padding: 1rem; }
+        .modal-overlay.active { display: flex; }
+        .modal-body { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; padding: 2.5rem; position: relative; }
+        .modal-close { position: absolute; top: 1.5rem; right: 1.5rem; font-size: 1.5rem; background: none; border: none; color: var(--text-muted); cursor: pointer; }
+        .modal-close:hover { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">Live<span>Concerts</span></div>
+        <nav class="sidebar-nav">
+            <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="login.html" id="nav-auth"><i class="fa-solid fa-right-to-bracket"></i> Login / Register</a>
+            <a href="help.html" class="active"><i class="fa-solid fa-circle-question"></i> Help & FAQ</a>
+            
+            <div class="sidebar-divider"></div>
+            
+            <a href="#" id="link-terms"><i class="fa-solid fa-file-contract"></i> Terms / Privacy Policy</a>
+            <a href="#" id="link-support"><i class="fa-solid fa-headset"></i> Contact / Support Ticket</a>
+            <a href="#" id="link-bug"><i class="fa-solid fa-bug"></i> Report a Bug / Feedback</a>
+            
+            <div class="sidebar-divider"></div>
+            
+            <a href="creator.html" id="nav-creator-studio" style="display: none;"><i class="fa-solid fa-video"></i> Creator Studio</a>
+            <a href="admin.html" id="nav-admin" style="display: none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
+            <a href="#" id="nav-logout" class="sidebar-btn" style="background: rgba(255,51,102,0.1); color: var(--accent); box-shadow: none; display: none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper" style="padding: 4rem 10%;">
+        <h1 class="page-title" style="font-size: 3rem; margin-bottom: 1rem; text-align: center;">How can we help you?</h1>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 4rem; font-size: 1.1rem;">Find answers to common questions about ticketing, streaming, and payouts.</p>
+
+        <h2 style="margin-bottom: 1.5rem;">Frequently Asked Questions</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')"><span>How do I buy a ticket for a live event?</span><i class="fa-solid fa-chevron-down"></i></div>
+            <div class="faq-answer">Click on any event on the homepage. If the event is premium, you will see an M-Pesa prompt. Enter your phone number, click pay, and enter your M-Pesa PIN on your phone. The stream will unlock instantly once payment is confirmed.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')"><span>How do I get paid as a creator?</span><i class="fa-solid fa-chevron-down"></i></div>
+            <div class="faq-answer">Your earnings accumulate in your Creator Dashboard. LiveConcerts takes a 15% commission on all ticket sales. You can request an M-Pesa payout at any time from the Earnings tab.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')"><span>What equipment do I need to go live?</span><i class="fa-solid fa-chevron-down"></i></div>
+            <div class="faq-answer">You can stream directly using your mobile phone or browser camera, professional DSLR or camcorders via HDMI capture cards, or professional streaming software like OBS Studio, vMix, and Streamlabs using your unique RTMP / WHIP keys.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')"><span>Can I share my ticket link with a friend?</span><i class="fa-solid fa-chevron-down"></i></div>
+            <div class="faq-answer">No. For paid events, the video player uses secure, single-use tokens generated specifically for your account. If you share the link, it will not work for anyone else.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')"><span>How do I report a problem or bug?</span><i class="fa-solid fa-chevron-down"></i></div>
+            <div class="faq-answer">Use the "Report a Bug / Feedback" link in the sidebar or click below to submit a ticket. Our engineering team reviews all reports within 24 hours.</div>
+        </div>
+
+        <div style="margin-top: 4rem; text-align: center; background: var(--card-bg); padding: 3rem; border-radius: 16px; border: 1px solid var(--border);">
+            <h2>Still need help?</h2>
+            <p style="color: var(--text-muted); margin: 1rem 0 2rem 0;">Our support team is available Monday - Friday, 9AM to 5PM EAT.</p>
+            <button class="btn-primary" onclick="openModal('modal-contact')">Contact Support</button>
+        </div>
+    </div>
+
+    <!-- MODAL: TERMS & PRIVACY POLICY -->
+    <div class="modal-overlay" id="modal-terms">
+        <div class="modal-body">
+            <button class="modal-close" onclick="closeModal('modal-terms')">✕</button>
+            <h2 style="margin-bottom: 1rem;">Terms of Service & Privacy Policy</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Welcome to LiveConcerts. By using our services, you agree to our terms.</p>
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">1. Broadcast Rights & TOS</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Creators must own or hold licensing rights for all broadcasted content. Streams violating copyright or TOS will be terminated immediately.</p>
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">2. Data Privacy</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Your personal details and M-Pesa transaction records are encrypted and strictly protected under Kenyan data protection regulations.</p>
+            <button class="btn-primary" style="margin-top: 2rem; width: 100%;" onclick="closeModal('modal-terms')">I Understand & Agree</button>
+        </div>
+    </div>
+
+    <!-- MODAL: SUPPORT TICKET -->
+    <div class="modal-overlay" id="modal-contact">
+        <div class="modal-body">
+            <button class="modal-close" onclick="closeModal('modal-contact')">✕</button>
+            <h2 style="margin-bottom: 1rem;">Contact Support</h2>
+            <form onsubmit="event.preventDefault(); showToast('Support ticket submitted successfully!'); closeModal('modal-contact');">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom: 6px; color: var(--text-muted);">Your Email</label>
+                    <input type="email" required placeholder="you@example.com" style="width:100%; padding: 12px; background: #09090b; border:1px solid var(--border); color:#fff; border-radius:8px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom: 6px; color: var(--text-muted);">Subject</label>
+                    <input type="text" required placeholder="e.g. M-Pesa Payment Query" style="width:100%; padding: 12px; background: #09090b; border:1px solid var(--border); color:#fff; border-radius:8px;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display:block; margin-bottom: 6px; color: var(--text-muted);">Message</label>
+                    <textarea required placeholder="Explain your issue..." style="width:100%; padding: 12px; background: #09090b; border:1px solid var(--border); color:#fff; border-radius:8px; min-height: 100px;"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Submit Ticket</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: REPORT BUG -->
+    <div class="modal-overlay" id="modal-bug">
+        <div class="modal-body">
+            <button class="modal-close" onclick="closeModal('modal-bug')">✕</button>
+            <h2 style="margin-bottom: 1rem;">Report a Bug / Feedback</h2>
+            <form onsubmit="event.preventDefault(); showToast('Bug report sent to engineering team. Thank you!'); closeModal('modal-bug');">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom: 6px; color: var(--text-muted);">Bug Description</label>
+                    <textarea required placeholder="What issue did you encounter?" style="width:100%; padding: 12px; background: #09090b; border:1px solid var(--border); color:#fff; border-radius:8px; min-height: 100px;"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="global-footer">
+        <div>© 2026 LiveConcerts. All rights reserved.</div>
+        <div class="footer-links">
+            <a href="#" onclick="openModal('modal-terms')">Terms</a>
+            <a href="#" onclick="openModal('modal-terms')">Privacy</a>
+            <a href="help.html">Help & FAQ</a>
+            <a href="#" onclick="openModal('modal-contact')">Contact</a>
+        </div>
+    </footer>
+
+    <!-- FIXED: Added app.js and utils.js so the sidebar checks roles -->
+    <script src="utils.js"></script>
+    <script src="app.js"></script>
+    <script>
+        function openModal(id) {
+            document.getElementById(id)?.classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id)?.classList.remove('active');
+        }
+
+        document.getElementById('link-terms')?.addEventListener('click', (e) => { e.preventDefault(); openModal('modal-terms'); });
+        document.getElementById('link-support')?.addEventListener('click', (e) => { e.preventDefault(); openModal('modal-contact'); });
+        document.getElementById('link-bug')?.addEventListener('click', (e) => { e.preventDefault(); openModal('modal-bug'); });
+
+        // Ensure logout button works on this page
+        document.getElementById('nav-logout')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('userRole');
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

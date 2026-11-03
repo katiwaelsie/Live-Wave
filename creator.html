@@ -1,0 +1,2427 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Studio | LiveConcerts</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="creator.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+
+    <style>
+        .studio-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .studio-form label {
+            display: block;
+            font-size: .9rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .studio-form input,
+        .studio-form select {
+            width: 100%;
+            padding: 14px;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card h3 {
+            font-size: 2.2rem;
+            font-weight: 800;
+        }
+
+        .stat-card p {
+            color: var(--text-muted);
+            font-size: .9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: .5rem;
+        }
+
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            background: var(--bg-color);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .source-tab {
+            flex: 1;
+            min-width: 140px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            font-size: .95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .source-tab.active {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .source-content { display: none; }
+        .source-content.active { display: block; }
+
+        .copy-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .copy-row input {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: monospace;
+        }
+
+        .btn-copy {
+            padding: 0 18px;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* AUTOMATIC CAMERA ORIENTATION */
+        .camera-preview {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto 1rem;
+            border: 1px solid var(--border);
+            transition: aspect-ratio .3s ease, max-width .3s ease;
+        }
+
+        .camera-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            background: rgba(0,0,0,.7);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stream-quality-panel,
+        .audio-panel,
+        .starting-panel,
+        .audience-panel {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .stream-quality-panel h3,
+        .audio-panel h3,
+        .starting-panel h3,
+        .audience-panel h3 {
+            margin-bottom: 15px;
+        }
+
+        .stream-quality-panel label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .stream-quality-panel select {
+            width: 100%;
+            max-width: 350px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+        }
+
+        .quality-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .quality-status p {
+            color: var(--text-muted);
+            font-size: .9rem;
+        }
+
+        .quality-status span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .audio-meter {
+            width: 100%;
+            height: 12px;
+            background: #333;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .audio-meter-fill {
+            width: 0%;
+            height: 100%;
+            background: #22c55e;
+            transition: width .12s;
+        }
+
+        .starting-panel {
+            text-align: center;
+            padding: 25px;
+        }
+
+        .countdown {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin: 15px 0;
+        }
+
+        .live-audience-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .live-indicator {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-row button { margin-top: 5px; }
+        .hidden { display: none !important; }
+
+        .management-select {
+            width: 100%;
+            max-width: 450px;
+            padding: 13px;
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            margin: 12px 0 20px;
+        }
+
+        .management-item {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .management-item p {
+            color: var(--text-muted);
+            margin: 6px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .management-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .management-actions button {
+            padding: 9px 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+        }
+
+        .danger-button {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444 !important;
+        }
+
+        .replay-video {
+            width: 100%;
+            max-height: 420px;
+            background: #000;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .management-input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        @media(max-width:700px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .studio-section { padding: 1.2rem; }
+            .copy-row { flex-direction: column; }
+            .copy-row button { padding: 12px; }
+            .countdown { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-logo" style="display:flex;justify-content:space-between;align-items:center;">
+        <a href="index.html" style="text-decoration:none;color:var(--text-main);">
+            Live<span>Creator</span>
+        </a>
+        <button onclick="toggleSidebar()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;">
+            <i class="fa-solid fa-bars-staggered"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="#" id="nav-dashboard" class="active"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+        <a href="#" id="nav-events"><i class="fa-solid fa-calendar-days"></i> My Events</a>
+        <a href="#" id="nav-earnings"><i class="fa-solid fa-wallet"></i> Earnings & Payouts</a>
+        <a href="#" id="nav-analytics"><i class="fa-solid fa-chart-pie"></i> Analytics / Stream Stats</a>
+        <a href="#" id="nav-moderation"><i class="fa-solid fa-comments"></i> Chat Moderation</a>
+        <a href="#" id="nav-replays"><i class="fa-solid fa-film"></i> Replay Management</a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="#" id="nav-stream-settings"><i class="fa-solid fa-gear"></i> Stream Settings</a>
+        <a href="#" id="nav-payout-methods"><i class="fa-solid fa-building-columns"></i> Payout Methods / Bank Details</a>
+        <a href="#" id="nav-promotions"><i class="fa-solid fa-bullhorn"></i> Promotions / Coupons</a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="#" id="nav-notifications">
+            <i class="fa-solid fa-bell"></i> Notifications & Followers
+            <span class="sidebar-badge" id="notif-badge">0</span>
+        </a>
+
+        <a href="#" id="nav-public-profile"><i class="fa-solid fa-user"></i> Profile / Public Page</a>
+        <div class="sidebar-divider"></div>
+
+        <a href="admin.html" id="nav-admin" style="display:none;">
+            <i class="fa-solid fa-shield-halved"></i> Admin Panel
+        </a>
+
+        <a href="help.html"><i class="fa-solid fa-circle-question"></i> Help & FAQ</a>
+        <div class="sidebar-divider"></div>
+
+        <a href="index.html" class="sidebar-btn" style="background:#27272a;box-shadow:none;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Site
+        </a>
+
+        <a href="#" id="nav-logout" class="sidebar-btn" style="background:rgba(255,51,102,0.1);color:var(--accent);box-shadow:none;">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </a>
+    </nav>
+</aside>
+
+<div class="main-wrapper" style="padding:2rem 5%;">
+
+    <div style="margin-bottom:1rem;display:flex;gap:1rem;">
+        <button class="btn-secondary" onclick="toggleSidebar()" style="padding:8px 14px;font-size:.9rem;">
+            <i class="fa-solid fa-bars"></i> Toggle Menu
+        </button>
+        <button class="btn-secondary" onclick="toggleTheme()" style="padding:8px 14px;font-size:.9rem;">
+            <i class="fa-solid fa-circle-half-stroke"></i> Theme
+        </button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="page-view active-view">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3rem;">
+            <div>
+                <h1 style="font-size:2.5rem;margin-bottom:.5rem;">Creator Studio</h1>
+                <p id="welcome-msg" style="color:var(--text-muted);">Welcome back!</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p>Total Earnings</p>
+                <h3 id="stat-earnings">KES 0</h3>
+            </div>
+            <div class="stat-card">
+                <p>Total Tickets Sold</p>
+                <h3 id="stat-tickets">0</h3>
+            </div>
+            <div class="stat-card">
+                <p>Total Followers</p>
+                <h3 id="stat-followers" style="color:var(--accent);">0</h3>
+            </div>
+        </div>
+
+        <section class="studio-section" id="create-event-section">
+            <h2 style="margin-bottom:1.5rem;">Create Event</h2>
+
+            <form id="event-form" class="studio-form">
+                <label>Event Title</label>
+                <input type="text" id="event-title" placeholder="e.g. Afrobeat Live" required>
+
+                <label>Ticket Price (KES) — 0 for Free</label>
+                <input type="number" id="event-price" min="0" value="0" required>
+
+                <label>Event Category</label>
+                <select id="event-category">
+                    <option>Music</option>
+                    <option>DJ Set</option>
+                    <option>Gospel</option>
+                    <option>Comedy</option>
+                    <option>Workshop</option>
+                </select>
+
+                <label>Access Type</label>
+                <select id="event-access-mode">
+                    <option value="public">Public — anyone can watch (paid events still require a verified ticket)</option>
+                    <option value="code">Invitation code — viewers must enter a code</option>
+                </select>
+                <label>Invitation code maximum uses (optional)</label>
+                <input type="number" id="access-code-max-uses" min="1" placeholder="Leave blank for unlimited uses">
+                <label>Invitation code expiry (optional)</label>
+                <input type="datetime-local" id="access-code-expiry">
+                <div id="access-code-result" style="display:none;padding:12px;border:1px solid var(--border);border-radius:10px;margin:12px 0;"></div>
+
+                <label>Scheduled Date & Time</label>
+                <input type="datetime-local" id="event-date" required>
+
+                <button type="submit" class="btn-primary" style="width:100%;">
+                    Publish Event & Generate Stream Credentials
+                </button>
+            </form>
+        </section>
+
+        <!-- BROADCAST CONTROL -->
+        <section class="studio-section hidden" id="broadcast-section">
+
+            <h2 style="margin-bottom:1rem;">
+                <i class="fa-solid fa-tower-broadcast" style="color:var(--accent);"></i>
+                Live Broadcast Control Center
+            </h2>
+
+            <p style="color:var(--text-muted);margin-bottom:1.5rem;">
+                Prepare your camera, microphone and stream quality before broadcasting.
+            </p>
+
+            <div class="starting-panel" id="starting-panel">
+                <h3><i class="fa-regular fa-clock"></i> Starting Soon</h3>
+                <p id="starting-event-title">Your event is being prepared.</p>
+                <div class="countdown" id="event-countdown">00:00:00</div>
+                <p id="starting-message" style="color:var(--text-muted);">
+                    Your audience will see your event when you go live.
+                </p>
+            </div>
+
+            <div class="audience-panel">
+                <h3><i class="fa-solid fa-users"></i> Live Audience</h3>
+                <div class="live-audience-number" id="live-viewer-count">0</div>
+                <p style="color:var(--text-muted);">Currently connected viewers</p>
+                <p id="audience-status" style="color:var(--text-muted);font-size:.85rem;margin-top:8px;">
+                    Audience counter waiting for broadcast.
+                </p>
+            </div>
+
+            <div class="source-tabs">
+                <button class="source-tab active" data-source="webcam">
+                    <i class="fa-solid fa-camera"></i> Phone / Browser Camera
+                </button>
+                <button class="source-tab" data-source="pro-cam">
+                    <i class="fa-solid fa-video"></i> Pro Camera / Capture Card
+                </button>
+                <button class="source-tab" data-source="software">
+                    <i class="fa-solid fa-desktop"></i> Software (OBS / vMix)
+                </button>
+            </div>
+
+            <div class="source-content active" id="source-webcam">
+
+                <div class="camera-preview">
+                    <div id="local-video-container" style="width:100%;height:100%;"></div>
+                    <div class="camera-overlay" id="camera-overlay">
+                        Camera preview inactive. Click Enable Camera below.
+                    </div>
+                </div>
+
+                <div class="stream-quality-panel">
+                    <h3><i class="fa-solid fa-sliders"></i> Stream Quality</h3>
+
+                    <label for="video-quality">Video Resolution</label>
+                    <select id="video-quality">
+                        <option value="360">360p - Low data usage</option>
+                        <option value="480" selected>480p - Balanced</option>
+                        <option value="720">720p - HD quality</option>
+                        <option value="1080">1080p - Full HD quality</option>
+                    </select>
+
+                    <div class="quality-status">
+                        <p>Connection: <span id="connection-status">Not connected</span></p>
+                        <p>Upload quality: <span id="upload-quality">Waiting for broadcast</span></p>
+                        <p>Selected quality: <span id="selected-quality">480p</span></p>
+                    </div>
+                </div>
+
+                <div class="audio-panel">
+                    <h3><i class="fa-solid fa-microphone"></i> Audio Controls</h3>
+
+                    <p style="color:var(--text-muted);margin-bottom:12px;">
+                        Enable your camera to test your microphone and monitor its input level.
+                    </p>
+
+                    <div class="control-row">
+                        <button class="btn-secondary" id="btn-mic-test" type="button" disabled>
+                            <i class="fa-solid fa-microphone-lines"></i> Test Microphone
+                        </button>
+
+                        <button class="btn-secondary" id="btn-mute-mic" type="button" disabled>
+                            <i class="fa-solid fa-microphone-slash"></i> Mute Microphone
+                        </button>
+                    </div>
+
+                    <div class="audio-meter">
+                        <div class="audio-meter-fill" id="audio-meter-fill"></div>
+                    </div>
+
+                    <p id="mic-status" style="color:var(--text-muted);font-size:.9rem;">
+                        Microphone not ready.
+                    </p>
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn-secondary" id="btn-enable-cam" type="button">
+                        <i class="fa-solid fa-power-off"></i> Enable Camera
+                    </button>
+
+                    <button class="btn-secondary" id="btn-flip-camera" type="button" disabled>
+                        <i class="fa-solid fa-camera-rotate"></i> Flip Camera
+                    </button>
+
+                    <button class="btn-primary" id="btn-start-broadcast" type="button" disabled>
+                        <i class="fa-solid fa-tower-broadcast"></i> Start Broadcast
+                    </button>
+
+                    <button class="btn-primary hidden" id="btn-golive" type="button" style="background:var(--accent);" disabled>
+                        <i class="fa-solid fa-circle"></i> GO LIVE NOW
+                    </button>
+
+                    <button class="btn-secondary hidden" id="btn-endlive" type="button" style="background:#ef4444;color:white;border-color:#ef4444;">
+                        <i class="fa-solid fa-stop"></i> END LIVE
+                    </button>
+                </div>
+
+                <p style="margin-top:10px;color:var(--text-muted);font-size:.85rem;">
+                    Status: <span id="live-status" class="status-offline">Offline</span>
+                </p>
+            </div>
+
+            <div class="source-content" id="source-pro-cam">
+                <p style="color:var(--text-muted);margin-bottom:1rem;">
+                    Connect your camera via USB/HDMI Capture Card.
+                </p>
+                <label>Selected Video Input Device</label>
+                <select id="pro-cam-select">
+                    <option>Searching for Capture Devices...</option>
+                </select>
+            </div>
+
+            <div class="source-content" id="source-software">
+                <p style="color:var(--text-muted);margin-bottom:1rem;">
+                    Copy these credentials into OBS Studio or vMix.
+                </p>
+
+                <label style="display:block;margin-bottom:5px;color:var(--text-muted);">RTMP Server URL</label>
+                <div class="copy-row">
+                    <input type="text" id="rtmp-url" value="rtmps://live.cloudflare.com:443/live/" readonly>
+                    <button class="btn-copy" onclick="copyField('rtmp-url')">Copy URL</button>
+                </div>
+
+                <label style="display:block;margin-bottom:5px;color:var(--text-muted);">Stream Key</label>
+                <div class="copy-row">
+                    <input type="password" id="stream-key" value="" readonly>
+                    <button class="btn-copy" onclick="copyField('stream-key')">Copy Key</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MY EVENTS -->
+    <div id="view-events" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">My Events</h1>
+        <div class="studio-section" id="my-events-list">
+            <p style="color:var(--text-muted);">Loading events...</p>
+        </div>
+    </div>
+
+    <!-- EARNINGS -->
+    <div id="view-earnings" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Earnings & Payouts</h1>
+        <div class="studio-section">
+            <p style="margin-bottom:.5rem;color:var(--text-muted);">Available to Withdraw</p>
+            <h2 id="earnings-balance" style="font-size:2.5rem;margin-bottom:1.5rem;">KES 0</h2>
+            <button class="btn-primary" onclick="showToast('Payout request submitted successfully!')" style="margin-bottom:2rem;">
+                Withdraw via M-Pesa
+            </button>
+            <h3 style="margin-bottom:1rem;">Transaction History</h3>
+            <div id="payout-history-container">
+                <p style="color:var(--text-muted);">No payout records found.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="view-analytics" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Analytics / Stream Stats</h1>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p>Total Events</p>
+                <h3 id="analytics-total-events">0</h3>
+            </div>
+            <div class="stat-card">
+                <p>Paid Tickets Sold</p>
+                <h3 id="analytics-total-views">0</h3>
+            </div>
+            <div class="stat-card">
+                <p>Current Live Viewers</p>
+                <h3 id="analytics-live-viewers">0</h3>
+            </div>
+        </div>
+        <p style="color:var(--text-muted);">
+            Current live viewers are concurrent connections, not lifetime views.
+        </p>
+    </div>
+
+    <!-- CHAT MODERATION -->
+    <div id="view-moderation" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:1rem;">Chat Moderation</h1>
+
+        <div class="studio-section">
+            <h3>Select an event</h3>
+            <p style="color:var(--text-muted);">
+                Choose one of your events to view and moderate its chat messages.
+            </p>
+
+            <select id="moderation-event-select" class="management-select">
+                <option value="">Loading your events...</option>
+            </select>
+
+            <div class="control-row">
+                <button class="btn-primary" id="btn-load-chat" type="button">
+                    <i class="fa-solid fa-rotate"></i> Load Messages
+                </button>
+                <button class="btn-secondary" id="btn-refresh-chat" type="button">
+                    Refresh
+                </button>
+            </div>
+        </div>
+
+        <div class="studio-section">
+            <h2 style="margin-bottom:1rem;">Event Messages</h2>
+            <div id="moderation-chat-list">
+                <p style="color:var(--text-muted);">Select an event to load its chat messages.</p>
+            </div>
+        </div>
+
+        <div class="studio-section">
+            <h2 style="margin-bottom:1rem;">Blocked Users</h2>
+            <p style="color:var(--text-muted);margin-bottom:1rem;">
+                Blocked users cannot send new messages in the selected event. You can unblock them here.
+            </p>
+            <div id="blocked-users-list">
+                <p style="color:var(--text-muted);">Select an event to view blocked users.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPLAY MANAGEMENT -->
+    <div id="view-replays" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:1rem;">Replay Management</h1>
+
+        <div class="studio-section">
+            <h2 style="margin-bottom:1rem;">Your Saved Replays</h2>
+            <p style="color:var(--text-muted);margin-bottom:1rem;">
+                Preview your recorded broadcasts, update their event titles, copy replay links or delete recordings.
+            </p>
+
+            <button class="btn-primary" id="btn-refresh-replays" type="button">
+                <i class="fa-solid fa-rotate"></i> Refresh Replays
+            </button>
+
+            <div id="replay-list" style="margin-top:1.5rem;">
+                <p style="color:var(--text-muted);">Loading saved replays...</p>
+            </div>
+        </div>
+
+        <div class="studio-section" id="replay-preview-section" style="display:none;">
+            <h2 id="replay-preview-title">Replay Preview</h2>
+            <video id="replay-preview-video" class="replay-video" controls playsinline></video>
+            <p style="color:var(--text-muted);margin-top:10px;">
+                This is a preview of your saved recording.
+            </p>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="view-stream-settings" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Stream Settings</h1>
+        <div class="studio-section">
+            <p style="color:var(--text-muted);">Default configuration is active.</p>
+        </div>
+    </div>
+
+    <div id="view-payout-methods" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Payout Methods / Bank Details</h1>
+        <div class="studio-section">
+            <p style="color:var(--text-muted);">Link your M-Pesa account from your profile.</p>
+        </div>
+    </div>
+
+    <div id="view-promotions" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Promotions / Coupons</h1>
+        <div class="studio-section">
+            <p style="color:var(--text-muted);">No active promotions.</p>
+        </div>
+    </div>
+
+    <div id="view-notifications" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Notifications & Recent Followers</h1>
+        <div class="studio-section">
+            <p style="color:var(--text-muted);">No new notifications.</p>
+        </div>
+    </div>
+
+    <div id="view-public-profile" class="page-view" style="display:none;">
+        <h1 style="margin-bottom:2rem;">Profile / Public Page</h1>
+        <div class="studio-section">
+            <form class="studio-form" onsubmit="event.preventDefault(); showToast('Profile updated!');">
+                <label>Display Name</label>
+                <input type="text" id="creator-display-name" value="">
+                <button type="submit" class="btn-primary">Save Profile</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script src="utils.js"></script>
+
+<script>
+const AGORA_APP_ID = "44c8b19c0f274649adbf09e623cf79df";
+
+let agoraClient = null;
+
+let localTracks = {
+    videoTrack: null,
+    audioTrack: null
+};
+
+let currentUser = null;
+let activeEventId = null;
+let replayRecorder = null;
+let replayChunks = [];
+let currentChannelName = null;
+
+let selectedVideoQuality = "480";
+let currentCameraId = null;
+
+let micMuted = false;
+let micMeterInterval = null;
+let countdownInterval = null;
+let audiencePresenceChannel = null;
+let audiencePresenceStarted = false;
+
+/* AUTOMATIC CAMERA ORIENTATION VARIABLES */
+let orientationCheckInterval = null;
+let currentOrientation = null;
+
+/* VIDEO QUALITY PRESETS */
+const videoQualityPresets = {
+    "360": {
+        width: 640,
+        height: 360,
+        frameRate: 15,
+        bitrateMax: 500,
+        bitrateMin: 300
+    },
+    "480": {
+        width: 854,
+        height: 480,
+        frameRate: 24,
+        bitrateMax: 1000,
+        bitrateMin: 500
+    },
+    "720": {
+        width: 1280,
+        height: 720,
+        frameRate: 30,
+        bitrateMax: 2000,
+        bitrateMin: 1000
+    },
+    "1080": {
+        width: 1920,
+        height: 1080,
+        frameRate: 30,
+        bitrateMax: 4000,
+        bitrateMin: 2500
+    }
+};
+
+/* SAFE HTML OUTPUT */
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[char]);
+}
+
+/* CONNECTION STATUS */
+function updateConnectionStatus(message) {
+    const element = document.getElementById("connection-status");
+    if (element) element.textContent = message;
+}
+
+/* UPLOAD QUALITY */
+function updateUploadQuality(quality) {
+    const element = document.getElementById("upload-quality");
+    if (!element) return;
+
+    const labels = {
+        0: "Unknown",
+        1: "Excellent",
+        2: "Good",
+        3: "Poor",
+        4: "Bad",
+        5: "Disconnected"
+    };
+
+    element.textContent = labels[quality] || "Unknown";
+}
+
+/* AGORA EVENTS */
+function registerAgoraEvents() {
+    if (!agoraClient) return;
+
+    agoraClient.on("connection-state-change", (curState, prevState, reason) => {
+        console.log("Agora connection:", curState, prevState, reason);
+        updateConnectionStatus(curState);
+    });
+
+    agoraClient.on("network-quality", stats => {
+        updateUploadQuality(stats.uplinkNetworkQuality);
+    });
+}
+
+/* MICROPHONE METER */
+function startMicMeter() {
+    stopMicMeter();
+
+    micMeterInterval = setInterval(() => {
+        if (!localTracks.audioTrack || micMuted) return;
+
+        try {
+            const level = localTracks.audioTrack.getVolumeLevel();
+            const percentage = Math.min(100, Math.max(0, level * 100));
+
+            document.getElementById("audio-meter-fill").style.width =
+                percentage + "%";
+
+            document.getElementById("mic-status").textContent =
+                percentage > 5
+                    ? "Microphone is receiving sound."
+                    : "Microphone is ready. Speak to test it.";
+        } catch (error) {
+            console.warn("Microphone meter error:", error);
+        }
+    }, 150);
+}
+
+function stopMicMeter() {
+    if (micMeterInterval) {
+        clearInterval(micMeterInterval);
+        micMeterInterval = null;
+    }
+
+    const meter = document.getElementById("audio-meter-fill");
+    if (meter) meter.style.width = "0%";
+}
+
+/* AUTOMATIC CAMERA ORIENTATION DETECTION */
+function detectCameraOrientation() {
+    const video = document.querySelector("#local-video-container video");
+    const preview = document.querySelector(".camera-preview");
+
+    if (!video || !preview) return;
+
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+
+    if (!width || !height) return;
+
+    const orientation = width > height ? "landscape" : "portrait";
+
+    if (orientation === currentOrientation) return;
+
+    currentOrientation = orientation;
+
+    if (orientation === "portrait") {
+        preview.style.aspectRatio = "9 / 16";
+        preview.style.maxWidth = "420px";
+    } else {
+        preview.style.aspectRatio = "16 / 9";
+        preview.style.maxWidth = "100%";
+    }
+
+    console.log(
+        "Camera orientation detected:",
+        orientation,
+        width + "x" + height
+    );
+}
+
+function startOrientationDetection() {
+    stopOrientationDetection();
+
+    currentOrientation = null;
+
+    orientationCheckInterval = setInterval(
+        detectCameraOrientation,
+        500
+    );
+}
+
+function stopOrientationDetection() {
+    if (orientationCheckInterval) {
+        clearInterval(orientationCheckInterval);
+        orientationCheckInterval = null;
+    }
+
+    currentOrientation = null;
+
+    const preview = document.querySelector(".camera-preview");
+
+    if (preview) {
+        preview.style.aspectRatio = "16 / 9";
+        preview.style.maxWidth = "100%";
+    }
+}
+
+/* MICROPHONE BUTTONS */
+document.getElementById("btn-mic-test").addEventListener("click", () => {
+    if (!localTracks.audioTrack) {
+        showToast("Enable your camera and microphone first.", true);
+        return;
+    }
+
+    if (micMuted) {
+        showToast("Unmute your microphone before testing it.", true);
+        return;
+    }
+
+    startMicMeter();
+    showToast("Microphone test is running. Speak to check the meter.");
+});
+
+document.getElementById("btn-mute-mic").addEventListener("click", async () => {
+    if (!localTracks.audioTrack) return;
+
+    try {
+        micMuted = !micMuted;
+        await localTracks.audioTrack.setMuted(micMuted);
+
+        const button = document.getElementById("btn-mute-mic");
+
+        if (micMuted) {
+            button.innerHTML = '<i class="fa-solid fa-microphone"></i> Unmute Microphone';
+            document.getElementById("mic-status").textContent = "Microphone muted.";
+            document.getElementById("audio-meter-fill").style.width = "0%";
+            showToast("Microphone muted.");
+        } else {
+            button.innerHTML = '<i class="fa-solid fa-microphone-slash"></i> Mute Microphone';
+            document.getElementById("mic-status").textContent = "Microphone is active.";
+            showToast("Microphone unmuted.");
+        }
+    } catch (error) {
+        micMuted = !micMuted;
+        showToast("Could not change microphone state: " + error.message, true);
+    }
+});
+
+/* STARTING SOON COUNTDOWN */
+function startEventCountdown(scheduledAt) {
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    const title = document.getElementById("event-title").value;
+    document.getElementById("starting-event-title").textContent =
+        title || "Your upcoming event";
+
+    const targetTime = new Date(scheduledAt).getTime();
+
+    function updateCountdown() {
+        const remaining = targetTime - Date.now();
+
+        if (remaining <= 0) {
+            document.getElementById("event-countdown").textContent = "It's showtime!";
+            document.getElementById("starting-message").textContent =
+                "Your scheduled start time has arrived. You can go live when ready.";
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            return;
+        }
+
+        const hours = Math.floor(remaining / 3600000);
+        const minutes = Math.floor((remaining % 3600000) / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+
+        document.getElementById("event-countdown").textContent =
+            String(hours).padStart(2, "0") + ":" +
+            String(minutes).padStart(2, "0") + ":" +
+            String(seconds).padStart(2, "0");
+    }
+
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+/* LIVE AUDIENCE COUNTER */
+function updateAudienceCount() {
+    if (!audiencePresenceChannel) return;
+
+    const presence = audiencePresenceChannel.presenceState();
+    const count = Object.keys(presence).length;
+
+    document.getElementById("live-viewer-count").textContent = count;
+    document.getElementById("analytics-live-viewers").textContent = count;
+}
+
+async function startAudienceCounter() {
+    if (!activeEventId || audiencePresenceStarted) return;
+
+    const channelName = "event-viewers-" + activeEventId;
+
+    audiencePresenceChannel = supabaseClient.channel(channelName, {
+        config: {
+            presence: {
+                key: "creator-" + currentUser.id
+            }
+        }
+    });
+
+    audiencePresenceChannel
+        .on("presence", { event: "sync" }, updateAudienceCount)
+        .on("presence", { event: "join" }, updateAudienceCount)
+        .on("presence", { event: "leave" }, updateAudienceCount);
+
+    audiencePresenceChannel.subscribe(async status => {
+        if (status === "SUBSCRIBED") {
+            audiencePresenceStarted = true;
+
+            await audiencePresenceChannel.track({
+                role: "creator",
+                joined_at: new Date().toISOString()
+            });
+
+            document.getElementById("audience-status").textContent =
+                "Audience counter connected.";
+
+            updateAudienceCount();
+        }
+    });
+}
+
+async function stopAudienceCounter() {
+    if (audiencePresenceChannel) {
+        try {
+            await supabaseClient.removeChannel(audiencePresenceChannel);
+        } catch (error) {
+            console.warn("Could not remove audience channel:", error);
+        }
+    }
+
+    audiencePresenceChannel = null;
+    audiencePresenceStarted = false;
+
+    document.getElementById("live-viewer-count").textContent = "0";
+    document.getElementById("analytics-live-viewers").textContent = "0";
+    document.getElementById("audience-status").textContent =
+        "Audience counter waiting for broadcast.";
+}
+
+/* REPLAY RECORDING */
+async function startReplayRecording() {
+    replayChunks = [];
+
+    if (!window.MediaRecorder || !localTracks.videoTrack || !localTracks.audioTrack) {
+        showToast(
+            "Your browser cannot record this broadcast. The live stream can continue, but no replay will be saved.",
+            true
+        );
+        return;
+    }
+
+    try {
+        const mediaTracks = [
+            localTracks.videoTrack.getMediaStreamTrack(),
+            localTracks.audioTrack.getMediaStreamTrack()
+        ].filter(Boolean);
+
+        const stream = new MediaStream(mediaTracks);
+
+        const type = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+            ? "video/webm;codecs=vp8,opus"
+            : "video/webm";
+
+        replayRecorder = new MediaRecorder(stream, { mimeType: type });
+
+        replayRecorder.addEventListener("dataavailable", e => {
+            if (e.data && e.data.size) replayChunks.push(e.data);
+        });
+
+        replayRecorder.start(1000);
+    } catch (error) {
+        replayRecorder = null;
+        showToast("Replay recording could not start: " + error.message, true);
+    }
+}
+
+/* STOP AND SAVE REPLAY */
+async function stopAndSaveReplay() {
+    if (!replayRecorder || replayRecorder.state === "inactive") return null;
+
+    const recorder = replayRecorder;
+
+    return await new Promise(resolve => {
+        recorder.addEventListener("stop", async () => {
+            try {
+                const blob = new Blob(replayChunks, {
+                    type: recorder.mimeType || "video/webm"
+                });
+
+                if (!blob.size || !activeEventId) {
+                    throw new Error("No replay data or event ID was available.");
+                }
+
+                const path = `${activeEventId}/${Date.now()}.webm`;
+
+                const { error: uploadError } = await supabaseClient.storage
+                    .from("replays")
+                    .upload(path, blob, {
+                        contentType: "video/webm",
+                        upsert: false
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabaseClient.storage
+                    .from("replays")
+                    .getPublicUrl(path);
+
+                if (!data?.publicUrl) {
+                    throw new Error("Could not create a public replay URL.");
+                }
+
+                resolve(data.publicUrl);
+            } catch (error) {
+                console.error("Replay upload failed:", error);
+                showToast("Broadcast ended, but replay was not saved. " + error.message, true);
+                resolve(null);
+            } finally {
+                replayRecorder = null;
+                replayChunks = [];
+            }
+        }, { once: true });
+
+        recorder.stop();
+    });
+}
+
+/* INITIALIZE PAGE */
+document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { session }, error: sessionError } =
+        await supabaseClient.auth.getSession();
+
+    if (sessionError) {
+        console.error(sessionError);
+        showToast("Could not verify your login.", true);
+        return;
+    }
+
+    if (!session) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    currentUser = session.user;
+
+    const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .single();
+
+    const userName = profile ? profile.display_name : "Creator";
+
+    document.getElementById("welcome-msg").textContent =
+        `Welcome back, ${userName}! 👋`;
+
+    document.getElementById("creator-display-name").value = userName || "";
+
+    if (currentUser.email === "admin@liveconcerts.com" || profile?.is_admin) {
+        document.getElementById("nav-admin").style.display = "flex";
+    }
+
+    await loadMyEvents();
+    await loadCreatorStats();
+    await loadModerationEvents();
+    await loadReplays();
+
+    document.getElementById("nav-logout").addEventListener("click", async e => {
+        e.preventDefault();
+
+        if (replayRecorder && replayRecorder.state !== "inactive") {
+            replayRecorder.stop();
+        }
+
+        if (agoraClient) {
+            try {
+                await agoraClient.leave();
+            } catch (_) {}
+        }
+
+        stopOrientationDetection();
+        await stopAudienceCounter();
+        await supabaseClient.auth.signOut();
+        window.location.href = "index.html";
+    });
+});
+
+/* CREATOR STATISTICS */
+async function loadCreatorStats() {
+    const { data: events, error } = await supabaseClient
+        .from("events")
+        .select("id")
+        .eq("creator_id", currentUser.id);
+
+    if (error || !events) return;
+
+    const eventIds = events.map(e => e.id);
+
+    document.getElementById("analytics-total-events").textContent = events.length;
+
+    if (eventIds.length > 0) {
+        const { data: tickets } = await supabaseClient
+            .from("tickets")
+            .select("amount_kes")
+            .in("event_id", eventIds)
+            .eq("paid", true);
+
+        let totalEarnings = 0;
+
+        if (tickets) {
+            tickets.forEach(t => {
+                totalEarnings += Number(t.amount_kes || 0);
+            });
+        }
+
+        document.getElementById("stat-earnings").textContent = `KES ${totalEarnings}`;
+        document.getElementById("earnings-balance").textContent = `KES ${totalEarnings}`;
+        document.getElementById("stat-tickets").textContent = tickets ? tickets.length : 0;
+        document.getElementById("analytics-total-views").textContent = tickets ? tickets.length : 0;
+    } else {
+        document.getElementById("stat-earnings").textContent = "KES 0";
+        document.getElementById("earnings-balance").textContent = "KES 0";
+        document.getElementById("stat-tickets").textContent = "0";
+        document.getElementById("analytics-total-views").textContent = "0";
+    }
+}
+
+/* LOAD CREATOR EVENTS */
+async function loadMyEvents() {
+    const { data: events, error } = await supabaseClient
+        .from("events")
+        .select("*")
+        .eq("creator_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+    const container = document.getElementById("my-events-list");
+
+    if (!container) return;
+
+    if (error || !events || events.length === 0) {
+        container.innerHTML =
+            '<p style="color:var(--text-muted);">You have not created any events yet.</p>';
+        return;
+    }
+
+    let html = `
+        <table style="width:100%;border-collapse:collapse;">
+            <tr style="border-bottom:1px solid var(--border);text-align:left;">
+                <th style="padding:1rem;">Event</th>
+                <th style="padding:1rem;">Price</th>
+                <th style="padding:1rem;">Date</th>
+                <th style="padding:1rem;">Status</th>
+            </tr>
+    `;
+
+    events.forEach(ev => {
+        const dateStr = ev.scheduled_at
+            ? new Date(ev.scheduled_at).toLocaleString()
+            : "TBD";
+
+        html += `
+            <tr>
+                <td style="padding:1rem;">${escapeHTML(ev.title)}</td>
+                <td style="padding:1rem;">
+                    ${Number(ev.price_kes) === 0 ? "Free" : "KES " + escapeHTML(ev.price_kes)}
+                </td>
+                <td style="padding:1rem;">${escapeHTML(dateStr)}</td>
+                <td style="padding:1rem;">
+                    ${
+                        ev.is_live
+                            ? '<span style="color:#ff3366;">🔴 LIVE</span>'
+                            : (ev.replay_url ? "Replay Available" : "Scheduled")
+                    }
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    container.innerHTML = html;
+}
+
+async function manageAccessCodes() {
+    const container = document.getElementById("access-code-list");
+    if (!activeEventId || !container) return;
+    container.textContent = "Loading access codes…";
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/access-code`, {
+            method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`,"apikey":SUPABASE_ANON_KEY},
+            body:JSON.stringify({action:"list",eventId:activeEventId})
+        });
+        const data=await response.json();
+        if(!response.ok||!data.ok) throw new Error(data.error||"Could not load access codes");
+        container.replaceChildren();
+        if(!data.codes.length){container.textContent="No access codes found.";return;}
+        data.codes.forEach(item=>{
+            const row=document.createElement("div");row.style.cssText="padding:8px 0;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap";
+            const details=document.createElement("span");
+            details.textContent=`${item.label||"Access code"} · ${item.uses_count}/${item.max_uses??"∞"} uses · ${item.revoked_at?"REVOKED":(item.expires_at?"Expires "+new Date(item.expires_at).toLocaleString():"No expiry")}`;
+            row.appendChild(details);
+            if(!item.revoked_at){const revoke=document.createElement("button");revoke.type="button";revoke.className="btn-secondary";revoke.textContent="Revoke";revoke.onclick=async()=>{if(!confirm("Revoke this access code?"))return;const {data:{session}}=await supabaseClient.auth.getSession();const r=await fetch(`${SUPABASE_URL}/functions/v1/access-code`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`,"apikey":SUPABASE_ANON_KEY},body:JSON.stringify({action:"revoke",eventId:activeEventId,codeId:item.id})});const result=await r.json();if(!r.ok)alert(result.error||"Could not revoke code");else manageAccessCodes();};row.appendChild(revoke);}
+            container.appendChild(row);
+        });
+    } catch(error) { container.textContent=error.message||"Could not load access codes."; }
+}
+
+/* CREATE EVENT */
+document.getElementById("event-form").addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const title = document.getElementById("event-title").value.trim();
+    const price = parseInt(document.getElementById("event-price").value, 10);
+    const category = document.getElementById("event-category").value;
+    const date = document.getElementById("event-date").value;
+    const accessMode = document.getElementById("event-access-mode")?.value || "public";
+    const maxUsesValue = document.getElementById("access-code-max-uses")?.value || "";
+    const expiresValue = document.getElementById("access-code-expiry")?.value || "";
+
+    try {
+        if (!currentUser) throw new Error("Please sign in again.");
+        if (!date || new Date(date).getTime() <= Date.now()) {
+            throw new Error("Choose a future event date and time.");
+        }
+
+        const { data: event, error } = await supabaseClient
+            .from("events")
+            .insert({
+                creator_id: currentUser.id,
+                title,
+                price_kes: price,
+                category,
+                scheduled_at: new Date(date).toISOString(),
+                is_live: false,
+                access_mode: accessMode,
+                access_code_required: accessMode === "code"
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        activeEventId = event.id;
+
+        if (accessMode === "code") {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/access-code`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}`, "apikey": SUPABASE_ANON_KEY },
+                body: JSON.stringify({
+                    action: "issue", eventId: event.id,
+                    maxUses: maxUsesValue || null,
+                    expiresAt: expiresValue ? new Date(expiresValue).toISOString() : null,
+                    label: "Initial event access code"
+                })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.ok) throw new Error(result.error || "Event created, but access-code generation failed. Use the Manage Access Codes option to retry.");
+            const panel = document.getElementById("access-code-result");
+            panel.style.display = "block";
+            panel.replaceChildren();
+            const heading = document.createElement("strong"); heading.textContent = "Copy this invitation code now:";
+            const code = document.createElement("code"); code.textContent = result.code; code.style.cssText = "display:block;font-size:1.4rem;padding:10px 0;user-select:all";
+            const copy = document.createElement("button"); copy.type = "button"; copy.className = "btn-secondary"; copy.textContent = "Copy code";
+            copy.onclick = async () => { try { await navigator.clipboard.writeText(result.code); copy.textContent = "Copied!"; } catch { alert("Select and copy this code: " + result.code); } };
+            const manage = document.createElement("button"); manage.type = "button"; manage.className = "btn-secondary"; manage.textContent = "Manage access codes";
+            manage.style.marginLeft = "8px"; manage.onclick = manageAccessCodes;
+            const list = document.createElement("div"); list.id = "access-code-list"; list.style.marginTop = "12px";
+            panel.append(heading, code, copy, manage, list);
+        }
+
+        const streamKey = "live_" + Math.random().toString(36).slice(2, 14);
+        document.getElementById("stream-key").value = streamKey;
+
+        document.getElementById("broadcast-section").classList.remove("hidden");
+        startEventCountdown(event.scheduled_at);
+
+        document.getElementById("broadcast-section").scrollIntoView({
+            behavior: "smooth"
+        });
+
+        showToast("Event published successfully!");
+        await loadMyEvents();
+        await loadModerationEvents();
+    } catch (error) {
+        showToast(error.message, true);
+    }
+});
+
+/* ENABLE CAMERA AND MICROPHONE */
+document.getElementById("btn-enable-cam").addEventListener("click", async () => {
+    const cameraButton = document.getElementById("btn-enable-cam");
+
+    try {
+        cameraButton.disabled = true;
+        cameraButton.textContent = "Opening Camera...";
+
+        stopOrientationDetection();
+
+        if (agoraClient) {
+            try {
+                await agoraClient.leave();
+            } catch (_) {}
+        }
+
+        if (localTracks.videoTrack) {
+            localTracks.videoTrack.stop();
+            localTracks.videoTrack.close();
+            localTracks.videoTrack = null;
+        }
+
+        if (localTracks.audioTrack) {
+            localTracks.audioTrack.stop();
+            localTracks.audioTrack.close();
+            localTracks.audioTrack = null;
+        }
+
+        agoraClient = AgoraRTC.createClient({
+            mode: "live",
+            codec: "vp8"
+        });
+
+        await agoraClient.setClientRole("host");
+        registerAgoraEvents();
+
+        localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
+            encoderConfig: videoQualityPresets[selectedVideoQuality]
+        });
+
+        localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+
+        localTracks.videoTrack.play("local-video-container");
+
+        /* START AUTOMATIC ORIENTATION DETECTION */
+        startOrientationDetection();
+
+        const settings = localTracks.videoTrack
+            .getMediaStreamTrack()
+            .getSettings();
+
+        currentCameraId = settings.deviceId || null;
+
+        document.getElementById("camera-overlay").style.display = "none";
+
+        document.getElementById("btn-start-broadcast").disabled = false;
+        document.getElementById("btn-flip-camera").disabled = false;
+        document.getElementById("btn-mic-test").disabled = false;
+        document.getElementById("btn-mute-mic").disabled = false;
+
+        micMuted = false;
+
+        document.getElementById("btn-mute-mic").innerHTML =
+            '<i class="fa-solid fa-microphone-slash"></i> Mute Microphone';
+
+        cameraButton.disabled = false;
+        cameraButton.innerHTML = '<i class="fa-solid fa-check"></i> Camera Ready';
+
+        updateConnectionStatus("Camera ready");
+
+        document.getElementById("selected-quality").textContent =
+            selectedVideoQuality + "p";
+
+        startMicMeter();
+
+        showToast("Camera and microphone ready. Test your microphone before broadcasting.");
+    } catch (err) {
+        console.error("Camera error:", err);
+
+        stopOrientationDetection();
+
+        if (localTracks.videoTrack) {
+            localTracks.videoTrack.stop();
+            localTracks.videoTrack.close();
+            localTracks.videoTrack = null;
+        }
+
+        if (localTracks.audioTrack) {
+            localTracks.audioTrack.stop();
+            localTracks.audioTrack.close();
+            localTracks.audioTrack = null;
+        }
+
+        cameraButton.disabled = false;
+        cameraButton.innerHTML =
+            '<i class="fa-solid fa-power-off"></i> Enable Camera';
+
+        updateConnectionStatus("Camera error");
+        showToast("Camera error: " + err.message, true);
+    }
+});
+
+/* FLIP CAMERA */
+document.getElementById("btn-flip-camera").addEventListener("click", async () => {
+    if (!localTracks.videoTrack) {
+        showToast("Enable your camera first.", true);
+        return;
+    }
+
+    const flipButton = document.getElementById("btn-flip-camera");
+
+    try {
+        flipButton.disabled = true;
+
+        const cameras = await AgoraRTC.getCameras();
+
+        if (!cameras || cameras.length < 2) {
+            showToast("No second camera was found on this device.", true);
+            return;
+        }
+
+        const currentSettings = localTracks.videoTrack
+            .getMediaStreamTrack()
+            .getSettings();
+
+        const activeDeviceId = currentSettings.deviceId || currentCameraId;
+
+        let nextCamera = cameras.find(camera =>
+            camera.deviceId !== activeDeviceId
+        );
+
+        if (!nextCamera) nextCamera = cameras[0];
+
+        await localTracks.videoTrack.setDevice(nextCamera.deviceId);
+        currentCameraId = nextCamera.deviceId;
+
+        showToast("Camera switched successfully.");
+    } catch (error) {
+        console.error("Camera flip error:", error);
+        showToast("Could not switch camera: " + error.message, true);
+    } finally {
+        flipButton.disabled = false;
+    }
+});
+
+/* START BROADCAST */
+document.getElementById("btn-start-broadcast").addEventListener("click", async () => {
+    if (!agoraClient || !activeEventId) {
+        showToast("Please create an event and enable your camera first.", true);
+        return;
+    }
+
+    const btn = document.getElementById("btn-start-broadcast");
+
+    btn.disabled = true;
+    btn.textContent = "Connecting...";
+
+    try {
+        currentChannelName = `event-${activeEventId}`;
+
+        const { data: tokenData, error: tokenError } =
+            await supabaseClient.functions.invoke("agora-token", {
+                body: {
+                    channelName: currentChannelName,
+                    role: "publisher"
+                }
+            });
+
+        if (tokenError) {
+            console.error("Agora token error:", tokenError);
+            throw new Error(tokenData?.error || tokenError.message);
+        }
+
+        const token = tokenData?.token;
+
+        if (!token) {
+            throw new Error(tokenData?.error || "Agora publisher token was not returned.");
+        }
+
+        await agoraClient.join(
+            AGORA_APP_ID,
+            currentChannelName,
+            token,
+            null
+        );
+
+        await agoraClient.publish([
+            localTracks.audioTrack,
+            localTracks.videoTrack
+        ]);
+
+        document.getElementById("btn-golive").classList.remove("hidden");
+        document.getElementById("btn-golive").disabled = false;
+        document.getElementById("btn-start-broadcast").classList.add("hidden");
+
+        updateConnectionStatus("Connected");
+        showToast("Broadcast connected. Click GO LIVE NOW when ready.");
+    } catch (error) {
+        console.error("Broadcast error:", error);
+        showToast("Broadcast error: " + error.message, true);
+
+        btn.disabled = false;
+        btn.classList.remove("hidden");
+        btn.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Start Broadcast';
+
+        if (agoraClient) {
+            try {
+                await agoraClient.leave();
+            } catch (_) {}
+        }
+
+        updateConnectionStatus("Disconnected");
+    }
+});
+
+/* GO LIVE */
+document.getElementById("btn-golive").addEventListener("click", async () => {
+    const goliveBtn = document.getElementById("btn-golive");
+
+    goliveBtn.disabled = true;
+    goliveBtn.textContent = "Going Live...";
+
+    try {
+        if (!activeEventId) {
+            throw new Error("No event is attached to this broadcast.");
+        }
+
+        const { error: updateError } = await supabaseClient
+            .from("events")
+            .update({
+                is_live: true,
+                replay_url: null
+            })
+            .eq("id", activeEventId)
+            .eq("creator_id", currentUser.id);
+
+        if (updateError) throw updateError;
+
+        document.getElementById("live-status").textContent = "LIVE 🔴";
+        document.getElementById("live-status").className = "status-live";
+
+        document.getElementById("starting-panel").innerHTML = `
+            <h3><span class="live-indicator">LIVE NOW</span></h3>
+            <h2 style="margin:15px 0;">${escapeHTML(document.getElementById("event-title").value)}</h2>
+            <p style="color:var(--text-muted);">Your broadcast is now live. Welcome to your audience!</p>
+        `;
+
+        await startReplayRecording();
+        await startAudienceCounter();
+
+        showToast("You are now LIVE. Replay recording has started.");
+
+        goliveBtn.classList.add("hidden");
+        document.getElementById("btn-endlive").classList.remove("hidden");
+
+        await loadMyEvents();
+    } catch (error) {
+        console.error("Go Live error:", error);
+        showToast("Error: " + error.message, true);
+
+        goliveBtn.disabled = false;
+        goliveBtn.textContent = "GO LIVE NOW";
+    }
+});
+
+/* END LIVE */
+document.getElementById("btn-endlive").addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to end this live broadcast?")) return;
+
+    const endButton = document.getElementById("btn-endlive");
+
+    endButton.disabled = true;
+    endButton.textContent = "Ending live...";
+
+    try {
+        let replayUrl = null;
+
+        if (replayRecorder && replayRecorder.state !== "inactive") {
+            replayUrl = await stopAndSaveReplay();
+        }
+
+        await stopAudienceCounter();
+        stopMicMeter();
+        stopOrientationDetection();
+
+        if (agoraClient) {
+            try {
+                await agoraClient.unpublish(
+                    [localTracks.videoTrack, localTracks.audioTrack].filter(Boolean)
+                );
+            } catch (_) {}
+
+            await agoraClient.leave();
+        }
+
+        if (localTracks.videoTrack) {
+            localTracks.videoTrack.stop();
+            localTracks.videoTrack.close();
+            localTracks.videoTrack = null;
+        }
+
+        if (localTracks.audioTrack) {
+            localTracks.audioTrack.stop();
+            localTracks.audioTrack.close();
+            localTracks.audioTrack = null;
+        }
+
+        if (!activeEventId) {
+            throw new Error("No event ID is attached to this broadcast.");
+        }
+
+        const { error } = await supabaseClient
+            .from("events")
+            .update({
+                is_live: false,
+                replay_url: replayUrl
+            })
+            .eq("id", activeEventId)
+            .eq("creator_id", currentUser.id);
+
+        if (error) throw error;
+
+        document.getElementById("live-status").textContent = "Offline";
+        document.getElementById("live-status").className = "status-offline";
+
+        endButton.classList.add("hidden");
+        endButton.disabled = false;
+        endButton.innerHTML = '<i class="fa-solid fa-stop"></i> END LIVE';
+
+        document.getElementById("btn-golive").classList.add("hidden");
+        document.getElementById("btn-golive").disabled = false;
+        document.getElementById("btn-golive").innerHTML =
+            '<i class="fa-solid fa-circle"></i> GO LIVE NOW';
+
+        document.getElementById("btn-start-broadcast").classList.remove("hidden");
+        document.getElementById("btn-start-broadcast").disabled = true;
+        document.getElementById("btn-start-broadcast").innerHTML =
+            '<i class="fa-solid fa-tower-broadcast"></i> Start Broadcast';
+
+        document.getElementById("btn-enable-cam").disabled = false;
+        document.getElementById("btn-enable-cam").innerHTML =
+            '<i class="fa-solid fa-power-off"></i> Enable Camera';
+
+        document.getElementById("btn-flip-camera").disabled = true;
+        document.getElementById("btn-mic-test").disabled = true;
+        document.getElementById("btn-mute-mic").disabled = true;
+
+        document.getElementById("camera-overlay").style.display = "flex";
+
+        document.getElementById("starting-panel").innerHTML = `
+            <h3>Broadcast ended</h3>
+            <p style="color:var(--text-muted);">
+                ${replayUrl ? "Your replay has been saved." : "No replay was saved."}
+            </p>
+        `;
+
+        updateConnectionStatus("Disconnected");
+        updateUploadQuality(5);
+
+        if (!replayUrl) {
+            showToast(
+                "Broadcast ended, but no replay URL was saved. Check Storage permissions.",
+                true
+            );
+        } else {
+            showToast("Broadcast ended and replay saved.");
+        }
+
+        await loadMyEvents();
+        await loadReplays();
+    } catch (err) {
+        console.error("End broadcast error:", err);
+        showToast("Could not finish broadcast cleanly: " + err.message, true);
+
+        endButton.disabled = false;
+        endButton.innerHTML = '<i class="fa-solid fa-stop"></i> END LIVE';
+    }
+});
+
+/* CHANGE VIDEO QUALITY */
+document.getElementById("video-quality").addEventListener("change", async e => {
+    const quality = e.target.value;
+
+    selectedVideoQuality = quality;
+
+    document.getElementById("selected-quality").textContent = quality + "p";
+
+    if (!localTracks.videoTrack) {
+        showToast("Quality selected. It will apply when you enable your camera.");
+        return;
+    }
+
+    try {
+        await localTracks.videoTrack.setEncoderConfiguration(
+            videoQualityPresets[quality]
+        );
+
+        showToast("Video quality changed to " + quality + "p.");
+    } catch (error) {
+        console.error("Quality change failed:", error);
+        showToast("Could not change video quality: " + error.message, true);
+    }
+});
+
+/* SIDEBAR NAVIGATION */
+function switchView(viewName, activeLink) {
+    document.querySelectorAll(".page-view").forEach(v => {
+        v.style.display = "none";
+    });
+
+    const target = document.getElementById("view-" + viewName);
+
+    if (target) target.style.display = "block";
+
+    document.querySelectorAll(".sidebar-nav a").forEach(a => {
+        a.classList.remove("active");
+    });
+
+    if (activeLink) activeLink.classList.add("active");
+
+    if (viewName === "moderation") loadModerationEvents();
+    if (viewName === "replays") loadReplays();
+}
+
+[
+    "dashboard",
+    "events",
+    "earnings",
+    "analytics",
+    "moderation",
+    "replays",
+    "stream-settings",
+    "payout-methods",
+    "promotions",
+    "notifications",
+    "public-profile"
+].forEach(v => {
+    const link = document.getElementById("nav-" + v);
+
+    if (link) {
+        link.addEventListener("click", e => {
+            e.preventDefault();
+            switchView(v, e.currentTarget);
+        });
+    }
+});
+
+/* STREAM SOURCE TABS */
+document.querySelectorAll(".source-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".source-tab").forEach(t => {
+            t.classList.remove("active");
+        });
+
+        document.querySelectorAll(".source-content").forEach(c => {
+            c.classList.remove("active");
+        });
+
+        tab.classList.add("active");
+
+        const target = document.getElementById(
+            "source-" + tab.dataset.source
+        );
+
+        if (target) target.classList.add("active");
+    });
+});
+
+/* COPY STREAM DETAILS */
+function copyField(id) {
+    const input = document.getElementById(id);
+
+    if (input) {
+        input.select();
+        document.execCommand("copy");
+        showToast("Copied!");
+    }
+}
+
+/* ==========================================
+   CHAT MODERATION
+========================================== */
+
+/* LOAD EVENTS INTO MODERATION SELECT */
+async function loadModerationEvents() {
+    const select = document.getElementById("moderation-event-select");
+    if (!select || !currentUser) return;
+
+    const previousValue = select.value;
+
+    const { data: events, error } = await supabaseClient
+        .from("events")
+        .select("id,title")
+        .eq("creator_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Moderation events error:", error);
+        select.innerHTML = '<option value="">Could not load events</option>';
+        return;
+    }
+
+    if (!events || events.length === 0) {
+        select.innerHTML = '<option value="">No events found</option>';
+        return;
+    }
+
+    select.innerHTML = '<option value="">Choose an event</option>';
+
+    events.forEach(event => {
+        const option = document.createElement("option");
+        option.value = event.id;
+        option.textContent = event.title;
+        select.appendChild(option);
+    });
+
+    if (events.some(event => event.id === previousValue)) {
+        select.value = previousValue;
+    } else if (activeEventId && events.some(event => event.id === activeEventId)) {
+        select.value = activeEventId;
+    }
+}
+
+/* LOAD CHAT MESSAGES */
+async function loadChatMessages() {
+    const eventId = document.getElementById("moderation-event-select").value;
+    const container = document.getElementById("moderation-chat-list");
+
+    if (!eventId) {
+        container.innerHTML =
+            '<p style="color:var(--text-muted);">Please select an event first.</p>';
+        return;
+    }
+
+    container.innerHTML =
+        '<p style="color:var(--text-muted);">Loading messages...</p>';
+
+    const { data: messages, error } = await supabaseClient
+        .from("live_chat")
+        .select("id,event_id,user_id,username,message,created_at")
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+    if (error) {
+        console.error("Chat loading error:", error);
+        container.innerHTML =
+            '<p style="color:#ef4444;">Could not load messages. Check your live_chat table permissions and column names.</p>';
+        return;
+    }
+
+    if (!messages || messages.length === 0) {
+        container.innerHTML =
+            '<p style="color:var(--text-muted);">No messages have been sent for this event yet.</p>';
+        await loadBlockedUsers();
+        return;
+    }
+
+    container.innerHTML = messages.map(message => `
+        <div class="management-item">
+            <strong>${escapeHTML(message.username || "Viewer")}</strong>
+            <p>${escapeHTML(message.message)}</p>
+            <p><small>${escapeHTML(
+                message.created_at
+                    ? new Date(message.created_at).toLocaleString()
+                    : ""
+            )}</small></p>
+
+            <div class="management-actions">
+                <button class="danger-button"
+                    onclick="deleteChatMessage('${escapeHTML(message.id)}')">
+                    <i class="fa-solid fa-trash"></i> Delete Message
+                </button>
+
+                ${
+                    message.user_id
+                        ? `<button class="btn-secondary"
+                            onclick="blockChatUser('${escapeHTML(message.user_id)}')">
+                            <i class="fa-solid fa-ban"></i> Block User
+                           </button>`
+                        : ""
+                }
+            </div>
+        </div>
+    `).join("");
+
+    await loadBlockedUsers();
+}
+
+/* DELETE CHAT MESSAGE */
+async function deleteChatMessage(messageId) {
+    if (!confirm("Delete this chat message?")) return;
+
+    const { error } = await supabaseClient
+        .from("live_chat")
+        .delete()
+        .eq("id", messageId);
+
+    if (error) {
+        console.error("Delete message error:", error);
+        showToast("Could not delete message: " + error.message, true);
+        return;
+    }
+
+    showToast("Chat message deleted.");
+    await loadChatMessages();
+}
+
+/* BLOCK CHAT USER */
+async function blockChatUser(userId) {
+    const eventId = document.getElementById("moderation-event-select").value;
+
+    if (!eventId || !userId) {
+        showToast("Select an event and a valid user.", true);
+        return;
+    }
+
+    if (userId === currentUser.id) {
+        showToast("You cannot block your own account.", true);
+        return;
+    }
+
+    if (!confirm("Block this viewer from chatting in this event?")) return;
+
+    const { error } = await supabaseClient
+        .from("event_chat_blocks")
+        .insert({
+            event_id: eventId,
+            user_id: userId,
+            creator_id: currentUser.id
+        });
+
+    if (error) {
+        if (error.code === "23505") {
+            showToast("This viewer is already blocked.", true);
+        } else {
+            console.error("Block user error:", error);
+            showToast("Could not block user: " + error.message, true);
+        }
+        return;
+    }
+
+    showToast("Viewer blocked from this event's chat.");
+    await loadChatMessages();
+}
+
+/* LOAD BLOCKED USERS */
+async function loadBlockedUsers() {
+    const eventId = document.getElementById("moderation-event-select").value;
+    const container = document.getElementById("blocked-users-list");
+
+    if (!eventId) {
+        container.innerHTML =
+            '<p style="color:var(--text-muted);">Select an event to view blocked users.</p>';
+        return;
+    }
+
+    const { data: blocks, error } = await supabaseClient
+        .from("event_chat_blocks")
+        .select("id,user_id,created_at")
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Blocked users error:", error);
+        container.innerHTML =
+            '<p style="color:#ef4444;">Could not load blocked users. Check the event_chat_blocks table and permissions.</p>';
+        return;
+    }
+
+    if (!blocks || blocks.length === 0) {
+        container.innerHTML =
+            '<p style="color:var(--text-muted);">There are no blocked users for this event.</p>';
+        return;
+    }
+
+    container.innerHTML = blocks.map(block => `
+        <div class="management-item">
+            <strong>Blocked viewer</strong>
+            <p>User ID: ${escapeHTML(block.user_id)}</p>
+            <p><small>Blocked: ${escapeHTML(
+                block.created_at
+                    ? new Date(block.created_at).toLocaleString()
+                    : ""
+            )}</small></p>
+
+            <div class="management-actions">
+                <button class="btn-secondary"
+                    onclick="unblockChatUser('${escapeHTML(block.id)}')">
+                    <i class="fa-solid fa-unlock"></i> Unblock User
+                </button>
+            </div>
+        </div>
+    `).join("");
+}
+
+/* UNBLOCK CHAT USER */
+async function unblockChatUser(blockId) {
+    if (!confirm("Allow this viewer to chat in this event again?")) return;
+
+    const { error } = await supabaseClient
+        .from("event_chat_blocks")
+        .delete()
+        .eq("id", blockId);
+
+    if (error) {
+        console.error("Unblock error:", error);
+        showToast("Could not unblock user: " + error.message, true);
+        return;
+    }
+
+    showToast("Viewer unblocked.");
+    await loadChatMessages();
+}
+
+/* MODERATION BUTTONS */
+document.getElementById("btn-load-chat").addEventListener("click", loadChatMessages);
+document.getElementById("btn-refresh-chat").addEventListener("click", loadChatMessages);
+
+/* ==========================================
+   REPLAY MANAGEMENT
+========================================== */
+
+/* LOAD SAVED REPLAYS */
+async function loadReplays() {
+    const container = document.getElementById("replay-list");
+    if (!container || !currentUser) return;
+
+    container.innerHTML =
+        '<p style="color:var(--text-muted);">Loading your saved replays...</p>';
+
+    const { data: events, error } = await supabaseClient
+        .from("events")
+        .select("id,title,replay_url,scheduled_at,created_at")
+        .eq("creator_id", currentUser.id)
+        .not("replay_url", "is", null)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Replay loading error:", error);
+        container.innerHTML =
+            '<p style="color:#ef4444;">Could not load replays: ' + escapeHTML(error.message) + '</p>';
+        return;
+    }
+
+    if (!events || events.length === 0) {
+        container.innerHTML =
+            '<p style="color:var(--text-muted);">You do not have any saved replays yet. Your recordings will appear here after you end a broadcast.</p>';
+        return;
+    }
+
+    container.innerHTML = events.map(event => `
+        <div class="management-item">
+            <h3>${escapeHTML(event.title)}</h3>
+            <p>Recorded event: ${escapeHTML(
+                event.scheduled_at
+                    ? new Date(event.scheduled_at).toLocaleString()
+                    : "Date not available"
+            )}</p>
+
+            <label for="replay-title-${escapeHTML(event.id)}">Replay / event title</label>
+            <input
+                class="management-input"
+                id="replay-title-${escapeHTML(event.id)}"
+                type="text"
+                value="${escapeHTML(event.title)}"
+                maxlength="150"
+            >
+
+            <div class="management-actions">
+                <button class="btn-primary"
+                    onclick="previewReplay('${escapeHTML(event.id)}')">
+                    <i class="fa-solid fa-play"></i> Preview
+                </button>
+
+                <button class="btn-secondary"
+                    onclick="renameReplay('${escapeHTML(event.id)}')">
+                    <i class="fa-solid fa-pen"></i> Save Title
+                </button>
+
+                <button class="btn-secondary"
+                    onclick="copyReplayLink('${escapeHTML(event.id)}')">
+                    <i class="fa-solid fa-link"></i> Copy Replay Link
+                </button>
+
+                <button class="danger-button"
+                    onclick="deleteReplay('${escapeHTML(event.id)}')">
+                    <i class="fa-solid fa-trash"></i> Delete Replay
+                </button>
+            </div>
+        </div>
+    `).join("");
+}
+
+/* GET REPLAY EVENT */
+async function getReplayEvent(eventId) {
+    const { data, error } = await supabaseClient
+        .from("events")
+        .select("id,title,replay_url")
+        .eq("id", eventId)
+        .eq("creator_id", currentUser.id)
+        .single();
+
+    if (error) throw error;
+    if (!data || !data.replay_url) {
+        throw new Error("Replay not found.");
+    }
+
+    return data;
+}
+
+/* PREVIEW REPLAY */
+async function previewReplay(eventId) {
+    try {
+        const event = await getReplayEvent(eventId);
+
+        const previewSection = document.getElementById("replay-preview-section");
+        const video = document.getElementById("replay-preview-video");
+
+        document.getElementById("replay-preview-title").textContent =
+            event.title + " — Replay";
+
+        const { data: { session: replaySession } } = await supabaseClient.auth.getSession();
+        if (!replaySession) throw new Error("Please sign in again.");
+        const replayResponse = await fetch(`${SUPABASE_URL}/functions/v1/replay-url`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${replaySession.access_token}`, "apikey": SUPABASE_ANON_KEY },
+            body: JSON.stringify({ eventId })
+        });
+        const replayResult = await replayResponse.json().catch(() => ({}));
+        if (!replayResponse.ok || !replayResult.signedUrl) throw new Error(replayResult.error || "Replay access could not be verified.");
+        video.src = replayResult.signedUrl;
+        previewSection.style.display = "block";
+
+        previewSection.scrollIntoView({ behavior: "smooth" });
+
+        video.play().catch(() => {
+            showToast("Press play on the video to start previewing.");
+        });
+    } catch (error) {
+        showToast("Could not preview replay: " + error.message, true);
+    }
+}
+
+/* RENAME REPLAY TITLE */
+async function renameReplay(eventId) {
+    const input = document.getElementById("replay-title-" + eventId);
+    const newTitle = input ? input.value.trim() : "";
+
+    if (!newTitle) {
+        showToast("Please enter a replay title.", true);
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from("events")
+        .update({ title: newTitle })
+        .eq("id", eventId)
+        .eq("creator_id", currentUser.id);
+
+    if (error) {
+        showToast("Could not update title: " + error.message, true);
+        return;
+    }
+
+    showToast("Replay title updated.");
+    await loadReplays();
+    await loadMyEvents();
+}
+
+/* COPY REPLAY LINK */
+async function copyReplayLink(eventId) {
+    try {
+        const event = await getReplayEvent(eventId);
+
+        await navigator.clipboard.writeText(event.replay_url);
+
+        showToast("Replay link copied. You can now share it.");
+    } catch (error) {
+        console.error("Copy replay link error:", error);
+        showToast("Could not copy replay link: " + error.message, true);
+    }
+}
+
+/* GET STORAGE PATH FROM PUBLIC REPLAY URL */
+function getReplayStoragePath(replayUrl) {
+    const marker = "/storage/v1/object/public/replays/";
+
+    const position = replayUrl.indexOf(marker);
+
+    if (position === -1) {
+        throw new Error("The replay URL does not look like a public replays storage URL.");
+    }
+
+    return decodeURIComponent(
+        replayUrl.substring(position + marker.length).split("?")[0]
+    );
+}
+
+/* DELETE REPLAY */
+async function deleteReplay(eventId) {
+    if (!confirm("Permanently delete this replay recording? This cannot be undone.")) {
+        return;
+    }
+
+    try {
+        const event = await getReplayEvent(eventId);
+        const storagePath = getReplayStoragePath(event.replay_url);
+
+        const { error: storageError } = await supabaseClient.storage
+            .from("replays")
+            .remove([storagePath]);
+
+        if (storageError) throw storageError;
+
+        const { error: updateError } = await supabaseClient
+            .from("events")
+            .update({ replay_url: null })
+            .eq("id", eventId)
+            .eq("creator_id", currentUser.id);
+
+        if (updateError) throw updateError;
+
+        const video = document.getElementById("replay-preview-video");
+
+        if (video.src === event.replay_url) {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+            document.getElementById("replay-preview-section").style.display = "none";
+        }
+
+        showToast("Replay deleted successfully.");
+        await loadReplays();
+        await loadMyEvents();
+    } catch (error) {
+        console.error("Delete replay error:", error);
+        showToast("Could not delete replay: " + error.message, true);
+    }
+}
+
+/* REFRESH REPLAYS */
+document.getElementById("btn-refresh-replays")
+    .addEventListener("click", loadReplays);
+
+</script>
+
+    <script src="platform-features.js"></script>
+</body>
+</html>

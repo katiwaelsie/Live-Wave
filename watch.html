@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -594,6 +595,23 @@
         const autoplayOverlay = document.getElementById('autoplay-overlay');
         const playerWrap = document.getElementById('player-wrap');
 
+        // Give a useful message if the browser cannot fetch or decode a saved replay.
+        replayVideo.addEventListener('error', () => {
+            const mediaError = replayVideo.error;
+            const detail = mediaError
+                ? `Video playback error (code ${mediaError.code}). Check the replay file, storage access, and browser format support.`
+                : 'The replay video could not be loaded.';
+            console.error('Replay video element error:', mediaError || detail);
+            setStreamStatus('offline', 'REPLAY ERROR');
+            setBroadcasterStatus('Replay video failed to load');
+            document.getElementById('overlay-content').innerHTML = `
+                <h2>Replay video unavailable</h2>
+                <p>${escapeHTML(detail)}</p>
+                <button class="btn-primary" type="button" onclick="document.getElementById('replay-video').load()">Retry video</button>
+            `;
+            playerOverlay.style.display = 'flex';
+        });
+
         // ------------------------------
         // STREAM STATUS
         // ------------------------------
@@ -1028,12 +1046,20 @@
                 await checkAccess();
 
             } catch (error) {
-                console.error('Page loading error:', error);
+                console.error('Page loading / replay playback error:', error);
 
-                document.getElementById('overlay-content').innerHTML =
-                    '<h2>Something went wrong</h2><p>Please refresh and try again.</p>';
+                const message = error && error.message
+                    ? error.message
+                    : 'An unexpected error occurred.';
 
-                setStreamStatus('offline', 'ERROR');
+                document.getElementById('overlay-content').innerHTML = `
+                    <h2>${eventData && !eventData.is_live ? 'Replay could not be loaded' : 'Something went wrong'}</h2>
+                    <p>${escapeHTML(message)}</p>
+                    <button class="btn-primary" type="button" onclick="window.location.reload()">Try Again</button>
+                `;
+
+                setStreamStatus('offline', eventData && !eventData.is_live ? 'REPLAY ERROR' : 'ERROR');
+                setBroadcasterStatus(eventData && !eventData.is_live ? 'Replay unavailable — see message above' : 'Playback could not start');
             }
         });
 
